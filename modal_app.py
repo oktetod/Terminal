@@ -31,8 +31,7 @@ MODEL_DIR = "/models"
 @app.function(
     image=image,
     volumes={MODEL_DIR: model_volume},
-    timeout=3600,
-    secrets=[modal.Secret.from_name("huggingface-secret")]  # Opsional, jika butuh HF token
+    timeout=3600
 )
 def download_model():
     """Download model dari CivitAI"""
@@ -58,10 +57,9 @@ def download_model():
 # Class untuk inference
 @app.cls(
     image=image,
-    gpu="A10G",  # Pilih GPU sesuai kebutuhan: T4, A10G, A100
+    gpu="T4",  # GPU T4 lebih murah (~$0.60/hour)
     volumes={MODEL_DIR: model_volume},
-    container_idle_timeout=300,
-    secrets=[modal.Secret.from_name("huggingface-secret")]  # Opsional
+    container_idle_timeout=300
 )
 class ModelInference:
     @modal.enter()
