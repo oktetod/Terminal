@@ -22,8 +22,7 @@ DEFAULT_NEGATIVE_PROMPT = (
 )
 
 DEFAULT_POSITIVE_PROMPT_SUFFIX = (
-    "masterpiece, best quality, 8k, photorealistic, intricate details, "
-    "finely detailed skin, realistic texture, perfect anatomy, wide shot, "
+    "masterpiece, best quality, 8k, photorealistic, intricate details, wide shot, "
     "(full body shot)"
 )
 
