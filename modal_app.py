@@ -235,7 +235,7 @@ class ModelInference:
 
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("api_key")]
+    secrets=[modal.Secret.from_name("custom-secret")]
 )
 @modal.asgi_app()
 def fastapi_app():
