@@ -235,7 +235,7 @@ class ModelInference:
 
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("api-secret")]
+    secrets=[modal.Secret.from_name("custom-secret")]
 )
 @modal.asgi_app()
 def fastapi_app():
@@ -282,7 +282,7 @@ def fastapi_app():
         try:
             data = await request.json()
             
-            api_key = data.get("custom-secret")
+            api_key = data.get("api_key")
             expected_key = os.environ.get("API_KEY")
             
             if api_key != expected_key:
