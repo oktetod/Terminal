@@ -80,7 +80,7 @@ def download_model():
     image=image,
     gpu="T4",
     volumes={MODEL_DIR: model_volume},
-    container_idle_timeout=300
+    container_idle_timeout=20
 )
 class ModelInference:
     @modal.enter()
