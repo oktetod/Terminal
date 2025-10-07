@@ -1,19 +1,19 @@
 """
-Deploy Model CivitAI ke Modal.com dengan API Endpoint
-Untuk diintegrasikan dengan Telegram Bot
+Deploy Model CivitAI ke Modal.com dengan FastAPI
+Format baru - compatible dengan Modal terbaru
 """
 
 import modal
 from pathlib import Path
 
 # Inisialisasi Modal app
-app = modal.App("civitai-model-api")
+app = modal.App("civitai-api-fastapi")
 
-# Definisikan image dengan dependencies yang diperlukan
+# Definisikan image dengan dependencies
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install(
-        "fastapi[standard]",  # Required untuk web endpoints
+        "fastapi[standard]",
         "torch",
         "diffusers",
         "transformers",
@@ -58,7 +58,7 @@ def download_model():
 # Class untuk inference
 @app.cls(
     image=image,
-    gpu="T4",  # GPU T4 lebih murah (~$0.60/hour)
+    gpu="T4",
     volumes={MODEL_DIR: model_volume},
     container_idle_timeout=300
 )
@@ -72,7 +72,6 @@ class ModelInference:
         print("Loading model...")
         model_path = f"{MODEL_DIR}/model.safetensors"
         
-        # Sesuaikan dengan tipe model Anda (Stable Diffusion, LoRA, dll)
         self.pipe = StableDiffusionPipeline.from_single_file(
             model_path,
             torch_dtype=torch.float16,
@@ -97,7 +96,7 @@ class ModelInference:
             guidance_scale=guidance_scale
         ).images[0]
         
-        # Convert ke base64 untuk transfer
+        # Convert ke base64
         buffered = io.BytesIO()
         image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
@@ -105,68 +104,77 @@ class ModelInference:
         return {"image": img_str, "prompt": prompt}
 
 
-# Web endpoint untuk API
+# Mount FastAPI app ke Modal
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("api-secret")]  # Secret untuk API key
+    secrets=[modal.Secret.from_name("api-secret")]
 )
-@modal.web_endpoint(method="POST")
-def generate_image(data: dict):
-    """
-    API endpoint untuk generate image
-    
-    Request body:
-    {
-        "prompt": "your prompt here",
-        "negative_prompt": "optional negative prompt",
-        "num_steps": 20,
-        "guidance_scale": 7.5,
-        "api_key": "your-secret-api-key"
-    }
-    """
+@modal.asgi_app()
+def fastapi_app():
+    from fastapi import FastAPI, HTTPException, Request
+    from fastapi.responses import JSONResponse
     import os
     
-    # Validasi API key
-    api_key = data.get("api_key")
-    if api_key != os.environ.get("API_KEY"):
-        return {"error": "Invalid API key"}, 401
-    
-    prompt = data.get("prompt")
-    if not prompt:
-        return {"error": "Prompt is required"}, 400
-    
-    # Generate image
-    model = ModelInference()
-    result = model.generate.remote(
-        prompt=prompt,
-        negative_prompt=data.get("negative_prompt", ""),
-        num_steps=data.get("num_steps", 20),
-        guidance_scale=data.get("guidance_scale", 7.5)
-    )
-    
-    return result
+    web_app = FastAPI()
 
+    @web_app.get("/health")
+    async def health_check():
+        """Health check endpoint"""
+        return {"status": "healthy", "service": "civitai-model-api"}
 
-# Endpoint health check
-@app.function()
-@modal.web_endpoint(method="GET")
-def health():
-    """Health check endpoint"""
-    return {"status": "healthy", "service": "civitai-model-api"}
+    @web_app.post("/generate")
+    async def generate_image_endpoint(request: Request):
+        """
+        Generate image endpoint
+        
+        Body:
+        {
+            "prompt": "your prompt",
+            "negative_prompt": "optional",
+            "num_steps": 20,
+            "guidance_scale": 7.5,
+            "api_key": "your-api-key"
+        }
+        """
+        try:
+            data = await request.json()
+            
+            # Validasi API key
+            api_key = data.get("api_key")
+            expected_key = os.environ.get("API_KEY")
+            
+            if api_key != expected_key:
+                raise HTTPException(status_code=401, detail="Invalid API key")
+            
+            prompt = data.get("prompt")
+            if not prompt:
+                raise HTTPException(status_code=400, detail="Prompt is required")
+            
+            # Generate image
+            model = ModelInference()
+            result = model.generate.remote(
+                prompt=prompt,
+                negative_prompt=data.get("negative_prompt", ""),
+                num_steps=data.get("num_steps", 20),
+                guidance_scale=data.get("guidance_scale", 7.5)
+            )
+            
+            return JSONResponse(content=result)
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    return web_app
 
 
 # Local entry untuk testing
 @app.local_entrypoint()
 def main():
-    """Test the deployment locally"""
-    # Download model (uncomment jika belum download)
-    # download_model.remote()
-    
-    # Test inference
+    """Test locally"""
     model = ModelInference()
     result = model.generate.remote(
-        prompt="a beautiful landscape with mountains and lake, sunset",
+        prompt="beautiful landscape with mountains",
         num_steps=20
     )
-    print("Generation successful!")
+    print("Success!")
     print(f"Prompt: {result['prompt']}")
