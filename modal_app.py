@@ -121,10 +121,10 @@ class ModelInference:
         self, 
         prompt: str, 
         negative_prompt: str = "", 
-        num_steps: int = 25, 
+        num_steps: int = 10, 
         guidance_scale: float = 7.5,
-        width: int = 1024,
-        height: int = 1024,
+        width: int = 512,
+        height: int = 512,
         seed: int = -1,
         enhance_prompt: bool = True
     ):
