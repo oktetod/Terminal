@@ -86,26 +86,23 @@ class ModelInference:
     @modal.enter()
     def load_model(self):
         """Load model saat container start"""
-        # --- PERUBAHAN KRUSIAL DIMULAI DI SINI ---
-        # 1. GANTI Impor ke versi XL
+        # GANTI Impor ke versi XL
         from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline
         import torch
         
         print("Loading SDXL model...")
         model_path = f"{MODEL_DIR}/model.safetensors"
         
-        # 2. GANTI ke StableDiffusionXLPipeline
-        # Pipeline ini dirancang khusus untuk model SDXL
+        # GANTI ke StableDiffusionXLPipeline
         self.txt2img_pipe = StableDiffusionXLPipeline.from_single_file(
             model_path,
             torch_dtype=torch.float16,
             use_safetensors=True,
-            variant="fp16" # Rekomendasi untuk performa
+            variant="fp16"
         )
         self.txt2img_pipe.to("cuda")
         
-        # 3. GANTI ke StableDiffusionXLImg2ImgPipeline
-        # Pipeline ini juga harus versi XL dan menggunakan komponen dari pipeline txt2img
+        # GANTI ke StableDiffusionXLImg2ImgPipeline
         self.img2img_pipe = StableDiffusionXLImg2ImgPipeline(
             vae=self.txt2img_pipe.vae,
             text_encoder=self.txt2img_pipe.text_encoder,
@@ -116,7 +113,6 @@ class ModelInference:
             scheduler=self.txt2img_pipe.scheduler,
         )
         self.img2img_pipe.to("cuda")
-        # --- AKHIR DARI PERUBAHAN KRUSIAL ---
         
         print("✓ SDXL Model loaded successfully! Uncensored mode active.")
     
@@ -127,8 +123,8 @@ class ModelInference:
         negative_prompt: str = "", 
         num_steps: int = 25, 
         guidance_scale: float = 7.5,
-        width: int = 1024, # Default diubah ke 1024
-        height: int = 1024, # Default diubah ke 1024
+        width: int = 1024,
+        height: int = 1024,
         seed: int = -1,
         enhance_prompt: bool = True
     ):
@@ -153,7 +149,6 @@ class ModelInference:
         if seed != -1:
             generator = torch.Generator(device="cuda").manual_seed(seed)
         
-        # Tidak ada perubahan pada cara memanggil pipeline, karena argumennya sama
         image = self.txt2img_pipe(
             prompt=enhanced_prompt,
             negative_prompt=negative_prompt,
@@ -190,7 +185,6 @@ class ModelInference:
         enhance_prompt: bool = True
     ):
         """Edit image dengan prompt"""
-        # Fungsi ini juga akan otomatis bekerja dengan benar karena self.img2img_pipe sudah versi XL
         import io
         import base64
         from PIL import Image
@@ -239,8 +233,6 @@ class ModelInference:
             "uncensored": True
         }
 
-# Mount FastAPI app ke Modal
-# Tidak ada perubahan yang diperlukan di bagian FastAPI di bawah ini
 @app.function(
     image=image,
     secrets=[modal.Secret.from_name("api-secret")]
@@ -256,8 +248,8 @@ def fastapi_app():
     @web_app.get("/")
     async def root():
         return {
-            "service": "CivitAI Model API - Uncensored (SDXL)", # Diperbarui
-            "version": "3.0", # Diperbarui
+            "service": "CivitAI Model API - Uncensored (SDXL)",
+            "version": "3.0",
             "endpoints": {
                 "health": "GET /health",
                 "text-to-image": "POST /text2img",
@@ -282,7 +274,7 @@ def fastapi_app():
         return {
             "status": "healthy", 
             "service": "civitai-model-api",
-            "mode": "uncensored-sdxl" # Diperbarui
+            "mode": "uncensored-sdxl"
         }
 
     @web_app.post("/text2img")
@@ -365,9 +357,7 @@ def fastapi_app():
     
     return web_app
 
-
 @app.local_entrypoint()
 def main():
     """Test locally"""
-    # Tidak perlu diubah, hanya untuk testing lokal
     pass
