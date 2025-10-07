@@ -117,7 +117,7 @@ class ModelInference:
     def text_to_image(
         self, 
         prompt: str, 
-        negative_prompt: str = None, 
+        negative_prompt: str = "", 
         num_steps: int = 20, 
         guidance_scale: float = 7.5,
         width: int = 512,
@@ -136,9 +136,11 @@ class ModelInference:
         else:
             enhanced_prompt = prompt
         
-        # Gunakan default negative prompt jika tidak disediakan atau kosong
-        if not negative_prompt or negative_prompt.strip() == "":
+        # ROBUST: Handle None, empty string, or whitespace
+        if negative_prompt is None or not str(negative_prompt).strip():
             negative_prompt = DEFAULT_NEGATIVE_PROMPT
+        else:
+            negative_prompt = str(negative_prompt).strip()
         
         print(f"Text-to-Image: {enhanced_prompt[:100]}...")
         
@@ -176,7 +178,7 @@ class ModelInference:
         self,
         init_image_b64: str,
         prompt: str,
-        negative_prompt: str = None,
+        negative_prompt: str = "",
         num_steps: int = 20,
         guidance_scale: float = 7.5,
         strength: float = 0.75,
@@ -195,9 +197,11 @@ class ModelInference:
         else:
             enhanced_prompt = prompt
         
-        # Gunakan default negative prompt jika tidak disediakan atau kosong
-        if not negative_prompt or negative_prompt.strip() == "":
+        # ROBUST: Handle None, empty string, or whitespace
+        if negative_prompt is None or not str(negative_prompt).strip():
             negative_prompt = DEFAULT_NEGATIVE_PROMPT
+        else:
+            negative_prompt = str(negative_prompt).strip()
         
         print(f"Image-to-Image: {enhanced_prompt[:100]}...")
         
@@ -319,25 +323,25 @@ def fastapi_app():
             if not prompt:
                 raise HTTPException(status_code=400, detail="Prompt is required")
             
-            # Generate image - tidak kirim negative_prompt jika kosong
+            # JANGAN kirim negative_prompt jika None/empty - biar method pakai default
+            kwargs = {
+                "prompt": prompt,
+                "num_steps": data.get("num_steps", 20),
+                "guidance_scale": data.get("guidance_scale", 7.5),
+                "width": data.get("width", 512),
+                "height": data.get("height", 512),
+                "seed": data.get("seed", -1),
+                "enhance_prompt": data.get("enhance_prompt", True)
+            }
+            
+            # Hanya tambahkan negative_prompt jika ada dan tidak kosong
+            neg = data.get("negative_prompt")
+            if neg and str(neg).strip():
+                kwargs["negative_prompt"] = str(neg).strip()
+            
+            # Generate image
             model = ModelInference()
-            neg_prompt = data.get("negative_prompt")
-            # Jika negative_prompt kosong atau None, jangan kirim (biar pakai default)
-            if neg_prompt and neg_prompt.strip():
-                negative_prompt_arg = neg_prompt
-            else:
-                negative_prompt_arg = None
-                
-            result = model.text_to_image.remote(
-                prompt=prompt,
-                negative_prompt=negative_prompt_arg,
-                num_steps=data.get("num_steps", 20),
-                guidance_scale=data.get("guidance_scale", 7.5),
-                width=data.get("width", 512),
-                height=data.get("height", 512),
-                seed=data.get("seed", -1),
-                enhance_prompt=data.get("enhance_prompt", True)
-            )
+            result = model.text_to_image.remote(**kwargs)
             
             return JSONResponse(content=result)
             
@@ -384,25 +388,25 @@ def fastapi_app():
             if not prompt:
                 raise HTTPException(status_code=400, detail="prompt is required")
             
-            # Generate image - tidak kirim negative_prompt jika kosong
+            # JANGAN kirim negative_prompt jika None/empty - biar method pakai default
+            kwargs = {
+                "init_image_b64": init_image,
+                "prompt": prompt,
+                "num_steps": data.get("num_steps", 20),
+                "guidance_scale": data.get("guidance_scale", 7.5),
+                "strength": data.get("strength", 0.75),
+                "seed": data.get("seed", -1),
+                "enhance_prompt": data.get("enhance_prompt", True)
+            }
+            
+            # Hanya tambahkan negative_prompt jika ada dan tidak kosong
+            neg = data.get("negative_prompt")
+            if neg and str(neg).strip():
+                kwargs["negative_prompt"] = str(neg).strip()
+            
+            # Generate image
             model = ModelInference()
-            neg_prompt = data.get("negative_prompt")
-            # Jika negative_prompt kosong atau None, jangan kirim (biar pakai default)
-            if neg_prompt and neg_prompt.strip():
-                negative_prompt_arg = neg_prompt
-            else:
-                negative_prompt_arg = None
-                
-            result = model.image_to_image.remote(
-                init_image_b64=init_image,
-                prompt=prompt,
-                negative_prompt=negative_prompt_arg,
-                num_steps=data.get("num_steps", 20),
-                guidance_scale=data.get("guidance_scale", 7.5),
-                strength=data.get("strength", 0.75),
-                seed=data.get("seed", -1),
-                enhance_prompt=data.get("enhance_prompt", True)
-            )
+            result = model.image_to_image.remote(**kwargs)
             
             return JSONResponse(content=result)
             
