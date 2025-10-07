@@ -282,7 +282,7 @@ def fastapi_app():
         try:
             data = await request.json()
             
-            api_key = data.get("api_key")
+            api_key = data.get("custom-secret")
             expected_key = os.environ.get("API_KEY")
             
             if api_key != expected_key:
