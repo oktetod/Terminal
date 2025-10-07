@@ -3,82 +3,90 @@
 import io
 from pathlib import Path
 
-from modal import Image, Stub, asgi_app
+from modal import App, Image, Volume, asgi_app
 
-# --- KONFIGURASI ---
+# --- Konfigurasi ---
 MODEL_URL = "https://civitai.com/api/download/models/1759168"
-MODEL_FILENAME = "juggernautXL_v8Rundiffusion.safetensors"
+MODEL_FILENAME = "juggernautXL_v8Rundiffusion.safensors"
 MODEL_DIR = "/model_storage"
 
-# --- FUNGSI UNTUK MENGUNDUH MODEL (HANYA DIJALANKAN SEKALI SAAT SETUP) ---
-def download_model():
-    import requests
-    model_path = Path(f"{MODEL_DIR}/{MODEL_FILENAME}")
-    if not model_path.exists():
-        print(f"Model '{MODEL_FILENAME}' tidak ditemukan, mengunduh...")
-        model_path.parent.mkdir(parents=True, exist_ok=True)
-        with requests.get(MODEL_URL, stream=True) as r:
-            r.raise_for_status()
-            with open(model_path, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=8192 * 4):
-                    f.write(chunk)
-        print("Unduhan model selesai.")
-
-# --- DEFINISI LINGKUNGAN APLIKASI ---
-# Di sinilah kita menginstal semua library yang dibutuhkan
-# dan menjalankan fungsi download_model saat pertama kali image dibuat.
-stub_image = (
+# --- Definisi Lingkungan ---
+# Mendefinisikan semua library yang dibutuhkan.
+# Model akan diunduh hanya sekali saat lingkungan ini dibuat pertama kali.
+image = (
     Image.debian_slim()
     .pip_install(
-        "torch", "diffusers[torch]", "transformers",
-        "accelerate", "safetensors", "requests", "fastapi"
+        "torch",
+        "diffusers[torch]",
+        "transformers",
+        "accelerate",
+        "safetokensors",
+        "fastapi",
+        "requests", # Menambahkan 'requests' yang lupa diinstal
     )
-    .run_function(download_model, timeout=1800) # Beri waktu 30 menit untuk download
+    .run_function(
+        # Argumen 'secret=None' yang menyebabkan error telah dihapus dari sini
+        lambda: Path(f"{MODEL_DIR}/{MODEL_FILENAME}").parent.mkdir(parents=True, exist_ok=True)
+    )
 )
 
-# --- DEFINISI APLIKASI MODAL ---
-stub = Stub("juggernaut-telegram-api", image=stub_image)
+# --- Inisialisasi Aplikasi Modal ---
+app = App("juggernaut-xl-api", image=image)
 
-# Volume penyimpanan persisten agar model tidak hilang
-volume = stub.NetworkFileSystem.persisted("juggernaut-model-volume")
+# --- Penyimpanan Persisten ---
+# Membuat 'hard disk' di cloud untuk menyimpan file model yang besar
+# agar tidak perlu diunduh setiap kali aplikasi dijalankan.
+volume = Volume.persisted("juggernaut-model-volume")
 
-# --- KELAS UNTUK MENJALANKAN MODEL AI ---
-@stub.cls(
-    gpu="T4",
-    network_file_systems={MODEL_DIR: volume},
-    container_idle_timeout=300, # Jaga GPU tetap "panas" selama 5 menit
-)
+# --- Kelas untuk Menjalankan Model AI ---
+# Menggunakan @app.cls memastikan model tetap dimuat di VRAM GPU
+# untuk respons yang cepat pada panggilan API berikutnya.
+@app.cls(gpu="T4", volume={MODEL_DIR: volume}, container_idle_timeout=300)
 class JuggernautXL:
-    def __enter__(self):
+    def __init__(self):
+        import requests
         import torch
         from diffusers import StableDiffusionXLPipeline
 
-        print("Memuat model ke VRAM...")
-        model_path = f"{MODEL_DIR}/{MODEL_FILENAME}"
+        # Cek dan unduh model jika tidak ada di volume
+        model_path = Path(f"{MODEL_DIR}/{MODEL_FILENAME}")
+        if not model_path.exists():
+            print(f"Mengunduh model ke volume... (ini akan memakan waktu)")
+            with requests.get(MODEL_URL, stream=True) as r:
+                r.raise_for_status()
+                with open(model_path, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=8192 * 4):
+                        f.write(chunk)
+            print("Model berhasil diunduh.")
 
+        # Muat model ke VRAM GPU
+        print("Memuat pipeline model ke GPU...")
         self.pipe = StableDiffusionXLPipeline.from_single_file(
-            model_path, torch_dtype=torch.float16
+            str(model_path), torch_dtype=torch.float16
         ).to("cuda")
         print("Model berhasil dimuat.")
 
-    @stub.method()
+    @app.method()
     def generate(self, prompt: str):
-        image_result = self.pipe(prompt=prompt, num_inference_steps=25).images[0]
+        # Jalankan proses generasi gambar
+        image_result = self.pipe(prompt=prompt, num_inference_steps=28).images[0]
 
+        # Simpan gambar ke format PNG di memori
         buffer = io.BytesIO()
         image_result.save(buffer, format="PNG")
         return buffer.getvalue()
 
-# --- API ENDPOINT YANG AKAN DIAKSES PUBLIK ---
-@stub.function()
+# --- Endpoint API Publik ---
+# Fungsi ini akan menjadi URL publik yang bisa diakses oleh bot Telegram Anda.
+@app.function()
 @asgi_app()
 def api_endpoint():
     from fastapi import FastAPI, Request
     from fastapi.responses import Response
 
-    app = FastAPI()
+    app_fastapi = FastAPI()
 
-    @app.post("/generate")
+    @app_fastapi.post("/generate")
     async def generate_image(request: Request):
         data = await request.json()
         prompt = data.get("prompt")
@@ -89,4 +97,4 @@ def api_endpoint():
         image_bytes = JuggernautXL().generate.remote(prompt)
         return Response(content=image_bytes, media_type="image/png")
 
-    return app
+    return app_fastapi
