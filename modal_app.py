@@ -13,6 +13,7 @@ app = modal.App("civitai-model-api")
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install(
+        "fastapi[standard]",  # Required untuk web endpoints
         "torch",
         "diffusers",
         "transformers",
