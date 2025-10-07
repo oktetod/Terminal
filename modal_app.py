@@ -16,12 +16,15 @@ DEFAULT_NEGATIVE_PROMPT = (
     "fused fingers, too many hands, bad hands, bad anatomy), "
     "(ugly, deformed, disfigured), "
     "(text, watermark, logo, signature), "
-    "out of frame, out of focus"
+    "(3D, CGI, render, rendering, video game, Unreal Engine, Blender, ZBrush, painting, drawing, sketch, illustration, digital art, concept art, artwork, style, stylized, cartoon, manga, comic, 2D, flat), "
+    "out of frame, out of focus, "
+    "cropped, close-up, portrait, headshot, medium shot, upper body, bust shot, face, out of frame"
 )
 
 DEFAULT_POSITIVE_PROMPT_SUFFIX = (
     "masterpiece, best quality, 8k, photorealistic, intricate details, "
-    "finely detailed skin, realistic texture, perfect anatomy"
+    "finely detailed skin, realistic texture, perfect anatomy, wide shot, "
+    "(full body shot)"
 )
 
 # Definisikan image dengan dependencies
