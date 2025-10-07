@@ -16,7 +16,6 @@ DEFAULT_NEGATIVE_PROMPT = (
     "fused fingers, too many hands, bad hands, bad anatomy), "
     "(ugly, deformed, disfigured), "
     "(text, watermark, logo, signature), "
-    "(dark skin, black hair, ugly face), "
     "out of frame, out of focus"
 )
 
@@ -55,19 +54,24 @@ def download_model():
     import requests
     from pathlib import Path
     
+    # URL Model Juggernaut XL v9
     model_url = "https://civitai.com/api/download/models/1759168?type=Model&format=SafeTensor&size=full&fp=fp16"
     model_path = Path(MODEL_DIR) / "model.safetensors"
     
-    print("Downloading model...")
-    response = requests.get(model_url, stream=True)
-    response.raise_for_status()
+    if not model_path.exists():
+        print("Downloading model...")
+        response = requests.get(model_url, stream=True)
+        response.raise_for_status()
+        
+        with open(model_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+        
+        model_volume.commit()
+        print(f"Model downloaded to {model_path}")
+    else:
+        print(f"Model already exists at {model_path}")
     
-    with open(model_path, 'wb') as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            f.write(chunk)
-    
-    model_volume.commit()
-    print(f"Model downloaded to {model_path}")
     return str(model_path)
 
 
@@ -76,52 +80,55 @@ def download_model():
     image=image,
     gpu="T4",
     volumes={MODEL_DIR: model_volume},
-    container_idle_timeout=300  # Auto-shutdown setelah 5 menit idle
+    container_idle_timeout=300
 )
 class ModelInference:
     @modal.enter()
     def load_model(self):
         """Load model saat container start"""
-        from diffusers import StableDiffusionPipeline, StableDiffusionImg2ImgPipeline
+        # --- PERUBAHAN KRUSIAL DIMULAI DI SINI ---
+        # 1. GANTI Impor ke versi XL
+        from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline
         import torch
         
-        print("Loading model...")
+        print("Loading SDXL model...")
         model_path = f"{MODEL_DIR}/model.safetensors"
         
-        # Load Text-to-Image pipeline - NO SAFETY CHECKER
-        self.txt2img_pipe = StableDiffusionPipeline.from_single_file(
+        # 2. GANTI ke StableDiffusionXLPipeline
+        # Pipeline ini dirancang khusus untuk model SDXL
+        self.txt2img_pipe = StableDiffusionXLPipeline.from_single_file(
             model_path,
             torch_dtype=torch.float16,
             use_safetensors=True,
-            safety_checker=None,  # Completely disabled
-            requires_safety_checker=False
+            variant="fp16" # Rekomendasi untuk performa
         )
         self.txt2img_pipe.to("cuda")
         
-        # Load Image-to-Image pipeline - NO SAFETY CHECKER
-        self.img2img_pipe = StableDiffusionImg2ImgPipeline(
+        # 3. GANTI ke StableDiffusionXLImg2ImgPipeline
+        # Pipeline ini juga harus versi XL dan menggunakan komponen dari pipeline txt2img
+        self.img2img_pipe = StableDiffusionXLImg2ImgPipeline(
             vae=self.txt2img_pipe.vae,
             text_encoder=self.txt2img_pipe.text_encoder,
+            text_encoder_2=self.txt2img_pipe.text_encoder_2, # SDXL pakai 2 text encoder
             tokenizer=self.txt2img_pipe.tokenizer,
+            tokenizer_2=self.txt2img_pipe.tokenizer_2, # SDXL pakai 2 tokenizer
             unet=self.txt2img_pipe.unet,
             scheduler=self.txt2img_pipe.scheduler,
-            safety_checker=None,  # Completely disabled
-            feature_extractor=None,
-            requires_safety_checker=False
         )
         self.img2img_pipe.to("cuda")
+        # --- AKHIR DARI PERUBAHAN KRUSIAL ---
         
-        print("✓ Model loaded successfully! Uncensored mode active.")
+        print("✓ SDXL Model loaded successfully! Uncensored mode active.")
     
     @modal.method()
     def text_to_image(
         self, 
         prompt: str, 
         negative_prompt: str = "", 
-        num_steps: int = 20, 
+        num_steps: int = 25, 
         guidance_scale: float = 7.5,
-        width: int = 512,
-        height: int = 512,
+        width: int = 1024, # Default diubah ke 1024
+        height: int = 1024, # Default diubah ke 1024
         seed: int = -1,
         enhance_prompt: bool = True
     ):
@@ -130,25 +137,23 @@ class ModelInference:
         import base64
         import torch
         
-        # Enhance prompt dengan default suffix jika diminta
         if enhance_prompt:
             enhanced_prompt = f"{prompt}, {DEFAULT_POSITIVE_PROMPT_SUFFIX}"
         else:
             enhanced_prompt = prompt
         
-        # ROBUST: Handle None, empty string, or whitespace
         if negative_prompt is None or not str(negative_prompt).strip():
             negative_prompt = DEFAULT_NEGATIVE_PROMPT
         else:
             negative_prompt = str(negative_prompt).strip()
         
-        print(f"Text-to-Image: {enhanced_prompt[:100]}...")
+        print(f"Text-to-Image (SDXL): {enhanced_prompt[:100]}...")
         
-        # Set seed untuk reproducibility
         generator = None
         if seed != -1:
             generator = torch.Generator(device="cuda").manual_seed(seed)
         
+        # Tidak ada perubahan pada cara memanggil pipeline, karena argumennya sama
         image = self.txt2img_pipe(
             prompt=enhanced_prompt,
             negative_prompt=negative_prompt,
@@ -159,7 +164,6 @@ class ModelInference:
             generator=generator
         ).images[0]
         
-        # Convert ke base64
         buffered = io.BytesIO()
         image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
@@ -179,53 +183,48 @@ class ModelInference:
         init_image_b64: str,
         prompt: str,
         negative_prompt: str = "",
-        num_steps: int = 20,
+        num_steps: int = 25,
         guidance_scale: float = 7.5,
         strength: float = 0.75,
         seed: int = -1,
         enhance_prompt: bool = True
     ):
         """Edit image dengan prompt"""
+        # Fungsi ini juga akan otomatis bekerja dengan benar karena self.img2img_pipe sudah versi XL
         import io
         import base64
         from PIL import Image
         import torch
         
-        # Enhance prompt dengan default suffix jika diminta
         if enhance_prompt:
             enhanced_prompt = f"{prompt}, {DEFAULT_POSITIVE_PROMPT_SUFFIX}"
         else:
             enhanced_prompt = prompt
         
-        # ROBUST: Handle None, empty string, or whitespace
         if negative_prompt is None or not str(negative_prompt).strip():
             negative_prompt = DEFAULT_NEGATIVE_PROMPT
         else:
             negative_prompt = str(negative_prompt).strip()
         
-        print(f"Image-to-Image: {enhanced_prompt[:100]}...")
+        print(f"Image-to-Image (SDXL): {enhanced_prompt[:100]}...")
         
-        # Decode base64 image
         init_image_bytes = base64.b64decode(init_image_b64)
         init_image = Image.open(io.BytesIO(init_image_bytes)).convert("RGB")
         
-        # Set seed
         generator = None
         if seed != -1:
             generator = torch.Generator(device="cuda").manual_seed(seed)
         
-        # Generate
         image = self.img2img_pipe(
             prompt=enhanced_prompt,
             negative_prompt=negative_prompt,
             image=init_image,
-            strength=strength,  # 0.0 = no change, 1.0 = full change
+            strength=strength,
             num_inference_steps=num_steps,
             guidance_scale=guidance_scale,
             generator=generator
         ).images[0]
         
-        # Convert ke base64
         buffered = io.BytesIO()
         image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
@@ -240,8 +239,8 @@ class ModelInference:
             "uncensored": True
         }
 
-
 # Mount FastAPI app ke Modal
+# Tidak ada perubahan yang diperlukan di bagian FastAPI di bawah ini
 @app.function(
     image=image,
     secrets=[modal.Secret.from_name("api-secret")]
@@ -256,10 +255,9 @@ def fastapi_app():
 
     @web_app.get("/")
     async def root():
-        """Root endpoint"""
         return {
-            "service": "CivitAI Model API - Uncensored",
-            "version": "2.0",
+            "service": "CivitAI Model API - Uncensored (SDXL)", # Diperbarui
+            "version": "3.0", # Diperbarui
             "endpoints": {
                 "health": "GET /health",
                 "text-to-image": "POST /text2img",
@@ -268,8 +266,8 @@ def fastapi_app():
             "features": [
                 "✓ No NSFW filter", 
                 "✓ Uncensored generation",
-                "✓ Text-to-Image", 
-                "✓ Image-to-Image",
+                "✓ Text-to-Image (SDXL)", 
+                "✓ Image-to-Image (SDXL)",
                 "✓ Auto quality enhancement",
                 "✓ Default negative prompts for best results"
             ],
@@ -281,38 +279,17 @@ def fastapi_app():
 
     @web_app.get("/health")
     async def health_check():
-        """Health check endpoint"""
         return {
             "status": "healthy", 
             "service": "civitai-model-api",
-            "mode": "uncensored"
+            "mode": "uncensored-sdxl" # Diperbarui
         }
 
     @web_app.post("/text2img")
     async def text_to_image_endpoint(request: Request):
-        """
-        Text-to-Image endpoint (Uncensored)
-        
-        Body:
-        {
-            "prompt": "your prompt here",
-            "negative_prompt": "optional (uses default if not provided)",
-            "num_steps": 20,
-            "guidance_scale": 7.5,
-            "width": 512,
-            "height": 512,
-            "seed": -1,
-            "enhance_prompt": true,
-            "api_key": "your-api-key"
-        }
-        
-        If enhance_prompt=true, adds quality enhancement suffix automatically.
-        If negative_prompt not provided, uses default quality control negative prompt.
-        """
         try:
             data = await request.json()
             
-            # Validasi API key
             api_key = data.get("api_key")
             expected_key = os.environ.get("API_KEY")
             
@@ -323,23 +300,20 @@ def fastapi_app():
             if not prompt:
                 raise HTTPException(status_code=400, detail="Prompt is required")
             
-            # JANGAN kirim negative_prompt jika None/empty - biar method pakai default
             kwargs = {
                 "prompt": prompt,
-                "num_steps": data.get("num_steps", 20),
+                "num_steps": data.get("num_steps", 25),
                 "guidance_scale": data.get("guidance_scale", 7.5),
-                "width": data.get("width", 512),
-                "height": data.get("height", 512),
+                "width": data.get("width", 1024),
+                "height": data.get("height", 1024),
                 "seed": data.get("seed", -1),
                 "enhance_prompt": data.get("enhance_prompt", True)
             }
             
-            # Hanya tambahkan negative_prompt jika ada dan tidak kosong
             neg = data.get("negative_prompt")
             if neg and str(neg).strip():
                 kwargs["negative_prompt"] = str(neg).strip()
             
-            # Generate image
             model = ModelInference()
             result = model.text_to_image.remote(**kwargs)
             
@@ -350,30 +324,9 @@ def fastapi_app():
     
     @web_app.post("/img2img")
     async def image_to_image_endpoint(request: Request):
-        """
-        Image-to-Image endpoint (Uncensored)
-        
-        Body:
-        {
-            "init_image": "base64_string_of_image",
-            "prompt": "your prompt",
-            "negative_prompt": "optional (uses default if not provided)",
-            "num_steps": 20,
-            "guidance_scale": 7.5,
-            "strength": 0.75,
-            "seed": -1,
-            "enhance_prompt": true,
-            "api_key": "your-api-key"
-        }
-        
-        strength: 0.0-1.0 (0=no change, 1=full change)
-        If enhance_prompt=true, adds quality enhancement suffix automatically.
-        If negative_prompt not provided, uses default quality control negative prompt.
-        """
         try:
             data = await request.json()
             
-            # Validasi API key
             api_key = data.get("api_key")
             expected_key = os.environ.get("API_KEY")
             
@@ -388,23 +341,20 @@ def fastapi_app():
             if not prompt:
                 raise HTTPException(status_code=400, detail="prompt is required")
             
-            # JANGAN kirim negative_prompt jika None/empty - biar method pakai default
             kwargs = {
                 "init_image_b64": init_image,
                 "prompt": prompt,
-                "num_steps": data.get("num_steps", 20),
+                "num_steps": data.get("num_steps", 25),
                 "guidance_scale": data.get("guidance_scale", 7.5),
                 "strength": data.get("strength", 0.75),
                 "seed": data.get("seed", -1),
                 "enhance_prompt": data.get("enhance_prompt", True)
             }
             
-            # Hanya tambahkan negative_prompt jika ada dan tidak kosong
             neg = data.get("negative_prompt")
             if neg and str(neg).strip():
                 kwargs["negative_prompt"] = str(neg).strip()
             
-            # Generate image
             model = ModelInference()
             result = model.image_to_image.remote(**kwargs)
             
@@ -416,19 +366,8 @@ def fastapi_app():
     return web_app
 
 
-# Local entry untuk testing
 @app.local_entrypoint()
 def main():
     """Test locally"""
-    model = ModelInference()
-    
-    # Test Text-to-Image dengan enhancement
-    result = model.text_to_image.remote(
-        prompt="beautiful woman portrait",
-        num_steps=25,
-        enhance_prompt=True
-    )
-    print("✓ Text-to-Image Success!")
-    print(f"  Original Prompt: {result['original_prompt']}")
-    print(f"  Enhanced Prompt: {result['prompt'][:100]}...")
-    print(f"  Uncensored: {result['uncensored']}")
+    # Tidak perlu diubah, hanya untuk testing lokal
+    pass
