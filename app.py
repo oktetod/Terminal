@@ -10,9 +10,13 @@ MODEL_URL = "https://civitai.com/api/download/models/1759168"
 MODEL_FILENAME = "juggernautXL_v8Rundiffusion.safensors"
 MODEL_DIR = "/model_storage"
 
+# --- Fungsi Bernama (Pengganti Lambda) ---
+# Kita definisikan fungsi ini di sini agar bisa dipanggil oleh .run_function()
+def create_model_dir():
+    Path(f"{MODEL_DIR}/{MODEL_FILENAME}").parent.mkdir(parents=True, exist_ok=True)
+
+
 # --- Definisi Lingkungan ---
-# Mendefinisikan semua library yang dibutuhkan.
-# Model akan diunduh hanya sekali saat lingkungan ini dibuat pertama kali.
 image = (
     Image.debian_slim()
     .pip_install(
@@ -20,27 +24,21 @@ image = (
         "diffusers[torch]",
         "transformers",
         "accelerate",
-        "safetokensors",
+        "safetensors",
         "fastapi",
-        "requests", # Menambahkan 'requests' yang lupa diinstal
+        "requests",
     )
-    .run_function(
-        # Argumen 'secret=None' yang menyebabkan error telah dihapus dari sini
-        lambda: Path(f"{MODEL_DIR}/{MODEL_FILENAME}").parent.mkdir(parents=True, exist_ok=True)
-    )
+    # Sekarang kita memanggil fungsi bernama, bukan lambda
+    .run_function(create_model_dir)
 )
 
 # --- Inisialisasi Aplikasi Modal ---
 app = App("juggernaut-xl-api", image=image)
 
 # --- Penyimpanan Persisten ---
-# Membuat 'hard disk' di cloud untuk menyimpan file model yang besar
-# agar tidak perlu diunduh setiap kali aplikasi dijalankan.
 volume = Volume.persisted("juggernaut-model-volume")
 
 # --- Kelas untuk Menjalankan Model AI ---
-# Menggunakan @app.cls memastikan model tetap dimuat di VRAM GPU
-# untuk respons yang cepat pada panggilan API berikutnya.
 @app.cls(gpu="T4", volume={MODEL_DIR: volume}, container_idle_timeout=300)
 class JuggernautXL:
     def __init__(self):
@@ -48,7 +46,6 @@ class JuggernautXL:
         import torch
         from diffusers import StableDiffusionXLPipeline
 
-        # Cek dan unduh model jika tidak ada di volume
         model_path = Path(f"{MODEL_DIR}/{MODEL_FILENAME}")
         if not model_path.exists():
             print(f"Mengunduh model ke volume... (ini akan memakan waktu)")
@@ -59,7 +56,6 @@ class JuggernautXL:
                         f.write(chunk)
             print("Model berhasil diunduh.")
 
-        # Muat model ke VRAM GPU
         print("Memuat pipeline model ke GPU...")
         self.pipe = StableDiffusionXLPipeline.from_single_file(
             str(model_path), torch_dtype=torch.float16
@@ -68,16 +64,12 @@ class JuggernautXL:
 
     @app.method()
     def generate(self, prompt: str):
-        # Jalankan proses generasi gambar
         image_result = self.pipe(prompt=prompt, num_inference_steps=28).images[0]
-
-        # Simpan gambar ke format PNG di memori
         buffer = io.BytesIO()
         image_result.save(buffer, format="PNG")
         return buffer.getvalue()
 
 # --- Endpoint API Publik ---
-# Fungsi ini akan menjadi URL publik yang bisa diakses oleh bot Telegram Anda.
 @app.function()
 @asgi_app()
 def api_endpoint():
@@ -93,7 +85,6 @@ def api_endpoint():
         if not prompt:
             return Response(content='{"error": "Prompt tidak ditemukan"}', status_code=400)
 
-        # Panggil fungsi generate dari kelas JuggernautXL
         image_bytes = JuggernautXL().generate.remote(prompt)
         return Response(content=image_bytes, media_type="image/png")
 
