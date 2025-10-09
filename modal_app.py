@@ -10,13 +10,23 @@ from pathlib import Path
 app = modal.App("civitai-api-fastapi")
 
 # Default prompts untuk quality control
+# VERSI BARU YANG DISARANKAN
 DEFAULT_NEGATIVE_PROMPT = (
+    # Kata kunci untuk mencegah konten NSFW
+    "nsfw, nude, naked, porn, sex, sexual, explicit, uncensored, "
+    "ass, breasts, nipple, pussy, genitalia, "
+    
+    # Kualitas dan anatomi (sudah bagus dari kode Anda)
     "(worst quality, low quality, normal quality, blurry, fuzzy, pixelated), "
     "(extra limbs, extra fingers, malformed hands, missing fingers, extra digit, "
     "fused fingers, too many hands, bad hands, bad anatomy), "
     "(ugly, deformed, disfigured), "
+    
+    # Gaya dan format yang tidak diinginkan (sudah bagus dari kode Anda)
     "(text, watermark, logo, signature), "
     "(3D, CGI, render, rendering, video game, Unreal Engine, Blender, ZBrush, painting, drawing, sketch, illustration, digital art, concept art, artwork, style, stylized, cartoon, manga, comic, 2D, flat), "
+    
+    # Framing (sudah bagus dari kode Anda)
     "out of frame, out of focus, "
     "cropped, close-up, portrait, headshot, medium shot, upper body, bust shot, face, out of frame"
 )
