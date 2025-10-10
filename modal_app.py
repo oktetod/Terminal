@@ -310,19 +310,79 @@ def download_loras():
     import requests
     from pathlib import Path
     
+    failed_downloads = []
+    successful_downloads = []
+    skipped_existing = []
+    
+    total_loras = len(LORA_MODELS)
+    current_index = 0
+    
     for name, data in LORA_MODELS.items():
+        current_index += 1
         lora_path = Path(LORA_DIR) / data["filename"]
-        if not lora_path.exists():
-            print(f"Downloading LoRA: {name}...")
-            response = requests.get(data["url"], stream=True)
+        
+        if lora_path.exists():
+            print(f"[{current_index}/{total_loras}] ✓ LoRA sudah ada: {name}")
+            skipped_existing.append(name)
+            continue
+        
+        try:
+            print(f"[{current_index}/{total_loras}] 📥 Downloading LoRA: {name}...")
+            response = requests.get(data["url"], stream=True, timeout=60)
             response.raise_for_status()
+            
             with open(lora_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192): 
                     f.write(chunk)
+            
             lora_volume.commit()
-            print(f"LoRA {name} downloaded.")
-    print("All LoRAs download check complete.")
-
+            print(f"[{current_index}/{total_loras}] ✅ LoRA berhasil diunduh: {name}")
+            successful_downloads.append(name)
+            
+        except requests.exceptions.RequestException as e:
+            print(f"[{current_index}/{total_loras}] ❌ GAGAL download LoRA: {name}")
+            print(f"    Error: {str(e)}")
+            failed_downloads.append({
+                "index": current_index,
+                "name": name,
+                "filename": data["filename"],
+                "error": str(e)
+            })
+            continue
+        except Exception as e:
+            print(f"[{current_index}/{total_loras}] ❌ ERROR tidak terduga: {name}")
+            print(f"    Error: {str(e)}")
+            failed_downloads.append({
+                "index": current_index,
+                "name": name,
+                "filename": data["filename"],
+                "error": str(e)
+            })
+            continue
+    
+    # Laporan akhir
+    print("\n" + "="*70)
+    print("📊 LAPORAN DOWNLOAD LORA")
+    print("="*70)
+    print(f"✅ Berhasil diunduh: {len(successful_downloads)}")
+    print(f"⏭️  Sudah ada (diskip): {len(skipped_existing)}")
+    print(f"❌ Gagal diunduh: {len(failed_downloads)}")
+    print(f"📦 Total LoRA: {total_loras}")
+    
+    if failed_downloads:
+        print("\n" + "⚠️ " * 35)
+        print("DAFTAR LORA YANG GAGAL DIUNDUH:")
+        print("="*70)
+        for fail in failed_downloads:
+            print(f"\n#{fail['index']} - {fail['name']}")
+            print(f"   File: {fail['filename']}")
+            print(f"   Error: {fail['error']}")
+        print("\n" + "⚠️ " * 35)
+    else:
+        print("\n🎉 Semua LoRA berhasil diproses!")
+    
+    print("="*70)
+    
 @app.function(image=image, volumes={CONTROLNET_DIR: controlnet_volume}, timeout=3600)
 def download_controlnet_models():
     from huggingface_hub import snapshot_download
