@@ -12,7 +12,7 @@ image = modal.Image.debian_slim(python_version="3.10").pip_install(
     "git+https://github.com/kohya-ss/sd-scripts.git"
 )
 
-base_model_storage = modal.Volume.from_name("civitai-model")
+base_model_storage = modal.Volume.from_name("civitai-models")
 loras_storage = modal.Volume.from_name("civitai-loras-collection-vol")
 app = modal.App("sdxl-lora-merge-all-final-fix", image=image)
 BASE_MODEL_DIR = Path("/base_model")
