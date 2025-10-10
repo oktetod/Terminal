@@ -10,6 +10,8 @@ image = modal.Image.debian_slim(python_version="3.10").apt_install(
     "libgl1-mesa-glx",
     "libglib2.0-0"
 ).pip_install(
+    "numpy<2.0.0"
+).pip_install(
     "torch", "torchvision", "torchaudio",
     extra_options="--extra-index-url https://download.pytorch.org/whl/cu118"
 ).pip_install(
