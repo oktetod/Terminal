@@ -80,19 +80,35 @@ You are an autonomous image generation expert... Your goal is to analyze a user'
 # ===================================================================
 # MODAL API CLIENT
 # ===================================================================
+# GANTI SELURUH KELAS INI DI bot.py
+
+# ===================================================================
+# MODAL API CLIENT (FIXED for RuntimeError: no running event loop)
+# ===================================================================
 class ModalAPIClient:
     def __init__(self):
         self.base_url = Config.MODAL_API_URL.rstrip('/')
         self.api_key = Config.MODAL_API_KEY
-        self.session = aiohttp.ClientSession()
+        # JANGAN buat session di sini, tunda pembuatannya.
+        self.session = None
+
+    async def _get_session(self) -> aiohttp.ClientSession:
+        """
+        Membuat session saat pertama kali dibutuhkan, atau membuat ulang jika sudah ditutup.
+        Ini memastikan session dibuat di dalam event loop yang sedang berjalan.
+        """
+        if self.session is None or self.session.closed:
+            self.session = aiohttp.ClientSession()
+        return self.session
 
     async def get_all_loras(self) -> List[str]:
         """Mengambil SEMUA LoRA dari API Modal, menangani paginasi."""
         all_loras = []
         page = 1
+        session = await self._get_session() # Ambil session yang valid
         while True:
             try:
-                async with self.session.get(f"{self.base_url}/loras", params={"page": page, "limit": 100}) as response:
+                async with session.get(f"{self.base_url}/loras", params={"page": page, "limit": 100}) as response:
                     response.raise_for_status()
                     data = await response.json()
                     loras_on_page = data.get("loras", [])
@@ -105,7 +121,6 @@ class ModalAPIClient:
                 break
         return all_loras
     
-    # ... (fungsi generate_image dan _make_request tetap sama seperti sebelumnya)
     async def generate_image(self, params: Dict[str, Any]) -> Dict[str, Any]:
         endpoint = "text2img"
         if params.get("init_image"): endpoint = "img2img"
@@ -114,13 +129,16 @@ class ModalAPIClient:
     async def _make_request(self, endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
         url = f"{self.base_url}/{endpoint}"
         params["api_key"] = self.api_key
-        async with self.session.post(url, json=params, timeout=aiohttp.ClientTimeout(total=Config.REQUEST_TIMEOUT)) as response:
+        session = await self._get_session() # Ambil session yang valid
+        async with session.post(url, json=params, timeout=aiohttp.ClientTimeout(total=Config.REQUEST_TIMEOUT)) as response:
             response.raise_for_status()
             return await response.json()
 
     async def close(self):
-        await self.session.close()
-
+        """Menutup session jika sudah pernah dibuat."""
+        if self.session and not self.session.closed:
+            await self.session.close()
+            logger.info("Aiohttp session closed.")
 # ===================================================================
 # SMART BOT HANDLER
 # ===================================================================
