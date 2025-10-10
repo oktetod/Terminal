@@ -6,7 +6,7 @@ from pathlib import Path
 # BAGIAN 1: PENGATURAN LINGKUNGAN (DENGAN PERBAIKAN GIT)
 # ==============================================================================
 image = modal.Image.debian_slim(python_version="3.10").apt_install(
-    "git"  # <-- PERBAIKAN: Menginstal git
+    "git"
 ).pip_install(
     "torch", "torchvision", "torchaudio",
     extra_options="--extra-index-url https://download.pytorch.org/whl/cu118"
@@ -21,7 +21,7 @@ BASE_MODEL_DIR = Path("/base_model")
 LORAS_DIR = Path("/loras")
 
 # ==============================================================================
-# BAGIAN 2: FUNGSI-FUNGSI MODAL (Tidak perlu diubah)
+# BAGIAN 2: FUNGSI-FUNGSI MODAL
 # ==============================================================================
 
 @app.function(
@@ -44,10 +44,15 @@ def merge_loras_on_modal(base_model_path: str, output_model_path: str, lora_file
     base_model_full_path = BASE_MODEL_DIR / base_model_path
     output_model_full_path = BASE_MODEL_DIR / output_model_path
     output_model_full_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # --- PERBAIKAN DI SINI ---
     cmd = [
-        "sdxl_merge_lora.py", "--save_precision", "fp16",
+        "python", "-m", "sdxl_train.sdxl_merge_lora", # Panggil sebagai module Python
+        "--save_precision", "fp16",
         "--sd_model", str(base_model_full_path), "--save_to", str(output_model_full_path),
     ]
+    # -------------------------
+
     lora_full_paths = [str(LORAS_DIR / lora) for lora in lora_files]
     cmd.extend(["--models", *lora_full_paths])
     ratio_strs = [str(r) for r in lora_ratios]
@@ -84,4 +89,4 @@ def main():
         output_model_path=output_model,
         lora_files=loras_to_merge,
         lora_ratios=ratios_for_loras,
-        )
+    )
