@@ -25,7 +25,7 @@ class Config:
     CEREBRAS_API_KEY = "csk-j439vyke89px4we44r29wcvetwcfm6mjmp5xwmxx4m2mpmcn"
     MODAL_API_URL = "https://oktetod--civitai-api-fastapi-fastapi-app.modal.run"
     MODAL_API_KEY = "gilpad008"
-    ADMIN_USER_ID = "8484686373" # ID Telegram Anda untuk akses perintah admin
+    ADMIN_USER_ID = "8484686373" # Ganti dengan ID Telegram Anda
     REQUEST_TIMEOUT = 180
 
 # ===================================================================
@@ -54,11 +54,9 @@ You are an autonomous image generation expert... Your goal is to analyze a user'
 }}
 """
     async def analyze_and_select_tools(self, message: str, has_image: bool = False) -> Dict[str, Any]:
-        # Mengambil daftar LoRA TERBARU dari database setiap kali dipanggil
         lora_list = await database.get_loras_from_db()
         lora_list_json = json.dumps(lora_list, indent=2)
 
-        # Membuat system prompt dinamis dengan daftar LoRA dari database
         system_prompt = self.prompt_template.format(lora_list_json=lora_list_json)
         
         user_content = f"User message: '{message}'. Has attached image: {has_image}."
@@ -78,34 +76,23 @@ You are an autonomous image generation expert... Your goal is to analyze a user'
         return analysis
 
 # ===================================================================
-# MODAL API CLIENT
-# ===================================================================
-# GANTI SELURUH KELAS INI DI bot.py
-
-# ===================================================================
 # MODAL API CLIENT (FIXED for RuntimeError: no running event loop)
 # ===================================================================
 class ModalAPIClient:
     def __init__(self):
         self.base_url = Config.MODAL_API_URL.rstrip('/')
         self.api_key = Config.MODAL_API_KEY
-        # JANGAN buat session di sini, tunda pembuatannya.
         self.session = None
 
     async def _get_session(self) -> aiohttp.ClientSession:
-        """
-        Membuat session saat pertama kali dibutuhkan, atau membuat ulang jika sudah ditutup.
-        Ini memastikan session dibuat di dalam event loop yang sedang berjalan.
-        """
         if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession()
         return self.session
 
     async def get_all_loras(self) -> List[str]:
-        """Mengambil SEMUA LoRA dari API Modal, menangani paginasi."""
         all_loras = []
         page = 1
-        session = await self._get_session() # Ambil session yang valid
+        session = await self._get_session()
         while True:
             try:
                 async with session.get(f"{self.base_url}/loras", params={"page": page, "limit": 100}) as response:
@@ -129,16 +116,16 @@ class ModalAPIClient:
     async def _make_request(self, endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
         url = f"{self.base_url}/{endpoint}"
         params["api_key"] = self.api_key
-        session = await self._get_session() # Ambil session yang valid
+        session = await self._get_session()
         async with session.post(url, json=params, timeout=aiohttp.ClientTimeout(total=Config.REQUEST_TIMEOUT)) as response:
             response.raise_for_status()
             return await response.json()
 
     async def close(self):
-        """Menutup session jika sudah pernah dibuat."""
         if self.session and not self.session.closed:
             await self.session.close()
             logger.info("Aiohttp session closed.")
+
 # ===================================================================
 # SMART BOT HANDLER
 # ===================================================================
@@ -148,68 +135,99 @@ class SmartImageBot:
         self.modal = ModalAPIClient()
 
     async def update_loras_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handler untuk perintah /update_loras, hanya untuk admin."""
-        user_id = update.effective_user.id
+        user_id = str(update.effective_user.id)
         if user_id != Config.ADMIN_USER_ID:
             await update.message.reply_text("⛔ Anda tidak memiliki izin untuk menjalankan perintah ini.")
             return
 
         await update.message.reply_text("🔄 Memulai sinkronisasi LoRA... Mohon tunggu.")
         
-        # 1. Ambil daftar LoRA terbaru dari API Modal
-        api_loras = await self.modal.get_all_loras()
-        if not api_loras:
-            await update.message.reply_text("❌ Gagal mengambil daftar LoRA dari Modal API.")
-            return
+        try:
+            api_loras = await self.modal.get_all_loras()
+            if not api_loras:
+                await update.message.reply_text("❌ Gagal mengambil daftar LoRA dari Modal API.")
+                return
+                
+            sync_result = await database.sync_loras_to_db(api_loras)
             
-        # 2. Lakukan sinkronisasi (compare & merge) ke database
-        sync_result = await database.sync_loras_to_db(api_loras)
-        
-        # 3. Laporkan hasilnya
-        report = (
-            f"✅ Sinkronisasi LoRA selesai!\n\n"
-            f"➕ LoRA baru ditambahkan: {sync_result['added']}\n"
-            f"➖ LoRA lama dihapus: {sync_result['removed']}\n"
-            f"📊 Total LoRA di database sekarang: {len(api_loras)}"
-        )
-        await update.message.reply_text(report)
+            report = (
+                f"✅ Sinkronisasi LoRA selesai!\n\n"
+                f"➕ LoRA baru ditambahkan: {sync_result['added']}\n"
+                f"➖ LoRA lama dihapus: {sync_result['removed']}\n"
+                f"📊 Total LoRA di database sekarang: {len(api_loras)}"
+            )
+            await update.message.reply_text(report)
+        except Exception as e:
+            logger.error(f"Error during /update_loras: {e}")
+            await update.message.reply_text(f"Terjadi kesalahan saat sinkronisasi: {e}")
 
-    # ... (fungsi handle_message tetap sama seperti sebelumnya)
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
-            # ... (logika handle_message tidak berubah signifikan)
             await update.message.chat.send_action("typing")
-            analysis = await self.cerebras.analyze_and_select_tools(
-                message=update.message.text or "",
-                has_image=bool(update.message.photo)
-            )
-            # ... (sisa logika untuk menyiapkan params dan generate image)
-            params = {
-                "prompt": analysis.get("enhanced_prompt", update.message.text), "num_steps": 35,
-                "lora_name": analysis.get("selected_lora"),
-                # ... etc
-            }
-            if update.message.photo:
-                # ... (get photo logic)
-                pass # placeholder
             
+            prompt_text = update.message.text or update.message.caption or ""
+            has_image = bool(update.message.photo)
+            
+            analysis = await self.cerebras.analyze_and_select_tools(
+                message=prompt_text,
+                has_image=has_image
+            )
+
+            # Siapkan parameter dasar untuk API Modal
+            params = {
+                "prompt": analysis.get("enhanced_prompt", prompt_text),
+                "num_steps": 35,
+                "lora_name": analysis.get("selected_lora") if analysis.get("selected_lora") != "null" else None,
+                "lora_scale": 0.8,
+                "width": 1024,
+                "height": 1024
+            }
+
+            if has_image:
+                file = await context.bot.get_file(update.message.photo[-1].file_id)
+                img_bytes = io.BytesIO()
+                await file.download_to_memory(img_bytes)
+                img_bytes.seek(0)
+                params["init_image"] = base64.b64encode(img_bytes.getvalue()).decode('utf-8')
+                params["strength"] = 0.75 # Nilai default untuk i2i
+
+            status_message = await update.message.reply_text("🎨 Permintaan Anda sedang diproses, mohon tunggu...")
+
             result = await self.modal.generate_image(params)
-            # ... (send photo logic)
-            pass # placeholder
+            
+            image_data = base64.b64decode(result["image"])
+            
+            caption = (
+                f"✨ **Hasil Gambar**\n\n"
+                f"**Prompt:**\n`{result.get('prompt', 'N/A')}`\n\n"
+                f"**LoRA:** `{result.get('lora', 'None')}`\n"
+                f"**Seed:** `{result.get('seed', 'N/A')}`"
+            )
+
+            await context.bot.send_photo(
+                chat_id=update.effective_chat.id,
+                photo=io.BytesIO(image_data),
+                caption=caption,
+                parse_mode='Markdown'
+            )
+            await status_message.delete()
+
         except Exception as e:
-            logger.error(f"Handler error: {e}")
-            await update.message.reply_text(f"Error: {e}")
+            logger.error(f"Handler error: {e}", exc_info=True)
+            error_message = f"Terjadi kesalahan: {e}"
+            if "status_message" in locals() and status_message:
+                await status_message.edit_text(error_message)
+            else:
+                await update.message.reply_text(error_message)
+
 
 # ===================================================================
 # MAIN APPLICATION & STARTUP
 # ===================================================================
 async def post_init(application: Application):
-    """Fungsi yang dijalankan setelah bot siap, sebelum polling dimulai."""
     logger.info("Bot initialized. Running post-init setup...")
-    # 1. Inisialisasi skema database
     await database.init_db()
     
-    # 2. Jalankan sinkronisasi LoRA pertama kali secara otomatis
     bot_instance = application.bot_data["bot_instance"]
     logger.info("Running initial LoRA sync on startup...")
     api_loras = await bot_instance.modal.get_all_loras()
@@ -219,8 +237,10 @@ async def post_init(application: Application):
     else:
         logger.warning("Could not fetch LoRAs for initial sync.")
 
-def main():
+async def main():
+    """Memulai bot secara asynchronous."""
     bot = SmartImageBot()
+    
     application = (
         Application.builder()
         .token(Config.TELEGRAM_TOKEN)
@@ -229,14 +249,34 @@ def main():
     )
     application.bot_data["bot_instance"] = bot
 
-    # Tambahkan command handler untuk /update_loras
     application.add_handler(CommandHandler("update_loras", bot.update_loras_command))
-    # Tambahkan message handler utama
     application.add_handler(MessageHandler(filters.TEXT | filters.PHOTO, bot.handle_message))
     
-    logger.info("🚀 Starting bot...")
-    application.run_polling()
-    asyncio.run(bot.modal.close())
+    logger.info("🚀 Starting bot asynchronously...")
+
+    try:
+        await application.initialize()
+        await application.start()
+        await application.updater.start_polling()
+        logger.info("✅ Bot is polling.")
+        
+        # Jaga agar skrip tetap berjalan selamanya
+        await asyncio.Event().wait()
+            
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("Bot stopped by user.")
+    except Exception as e:
+        logger.error(f"An unexpected error occurred: {e}", exc_info=True)
+    finally:
+        logger.info("🛑 Shutting down bot...")
+        if application.updater and application.updater.running:
+            await application.updater.stop()
+        if application.running:
+            await application.stop()
+        await application.shutdown()
+        await bot.modal.close()
+        logger.info("👋 Bot shutdown complete.")
+
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
