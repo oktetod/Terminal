@@ -16,7 +16,7 @@ image = modal.Image.debian_slim(python_version="3.10").apt_install(
 
 base_model_storage = modal.Volume.from_name("civitai-models")
 loras_storage = modal.Volume.from_name("civitai-loras-collection-vol")
-app = modal.App("sdxl-lora-merge-final-v2", image=image)
+app = modal.App("sdxl-lora-merge-debug", image=image) # Nama diubah untuk hindari cache
 BASE_MODEL_DIR = Path("/base_model")
 LORAS_DIR = Path("/loras")
 
@@ -41,50 +41,34 @@ def get_all_lora_filenames():
     gpu="any"
 )
 def merge_loras_on_modal(base_model_path: str, output_model_path: str, lora_files: list[str], lora_ratios: list[float]):
-    """Fungsi ini menjalankan proses merge untuk semua LoRA yang ditemukan."""
-    import site
-    from pathlib import Path
-
-    base_model_full_path = BASE_MODEL_DIR / base_model_path
-    output_model_full_path = BASE_MODEL_DIR / output_model_path
-    output_model_full_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # --- PERBAIKAN FINAL ---
-    # 1. Cari tahu di mana pip menginstal paketnya di dalam container
-    site_packages_path = site.getsitepackages()[0]
+    """
+    FUNGSI DEBUG: Fungsi ini hanya untuk menemukan path file yang benar.
+    """
+    import subprocess
+    print("--- 🕵️  Memulai mode debug: Mencari file 'sdxl_merge_lora.py'... ---")
     
-    # 2. Buat path lengkap ke skrip yang benar
-    script_full_path = Path(site_packages_path) / "networks" / "sdxl_merge_lora.py"
+    # Perintah untuk mencari file di seluruh sistem di dalam container
+    cmd = ["find", "/", "-name", "sdxl_merge_lora.py", "-type", "f"]
     
-    # 3. Jalankan skrip menggunakan path lengkapnya
-    cmd = [
-        "python",
-        str(script_full_path), # <-- Gunakan path lengkap, bukan nama modul
-        "--save_precision", "fp16",
-        "--sd_model", str(base_model_full_path),
-        "--save_to", str(output_model_full_path),
-    ]
-    # -------------------------
-
-    lora_full_paths = [str(LORAS_DIR / lora) for lora in lora_files]
-    cmd.extend(["--models", *lora_full_paths])
-    ratio_strs = [str(r) for r in lora_ratios]
-    cmd.extend(["--ratios", *ratio_strs])
-
-    print(f"--- 🌀 Memulai proses merge untuk {len(lora_files)} LoRA... ---")
-    print(f"Running command: {' '.join(cmd)}")
-
     result = subprocess.run(cmd, capture_output=True, text=True)
-
-    if result.returncode != 0:
-        print("--- ❌ Proses merge gagal! ---")
-        print("STDOUT:", result.stdout)
-        print("STDERR:", result.stderr)
-        raise RuntimeError("Proses merge gagal.")
+    
+    print("--- 📜 Hasil Pencarian ---")
+    if result.stdout:
+        print("✅ File ditemukan di path berikut:")
+        # Output ini adalah yang kita butuhkan!
+        print(result.stdout)
     else:
-        print("--- ✅ Proses merge selesai! ---")
-        print("STDOUT:", result.stdout)
-        print(f"Model 'super-merge' disimpan di Volume 'civitai-models' pada path: {output_model_path}")
+        print("❌ File 'sdxl_merge_lora.py' tidak ditemukan di mana pun.")
+    
+    if result.stderr:
+        print("--- ⚠️ Pesan Error dari Perintah 'find' ---")
+        print(result.stderr)
+        
+    print("--- 🛑 Selesai debug. Proses dihentikan dengan sengaja. ---")
+    print("--- 👉 Salin path yang muncul di atas (jika ada) dan berikan ke saya. ---")
+    
+    # Menghentikan proses dengan sengaja setelah debug selesai
+    raise RuntimeError("DEBUG SELESAI: Ini bukan error, hanya cara untuk menghentikan eksekusi.")
 
 # ==============================================================================
 # BAGIAN 3: FUNGSI UTAMA
@@ -99,11 +83,10 @@ def main():
         print("Tidak ada file LoRA yang ditemukan. Proses dihentikan.")
         return
 
-    # Anda bisa mengatur rasio di sini sesuai kebutuhan
     uniform_ratio = 0.1
     ratios_for_loras = [uniform_ratio] * len(loras_to_merge)
     
-    base_model = "model.safetensors" # Pastikan nama base model Anda benar
+    base_model = "model.safetensors"
     output_model = "merged_models/juggernaut_ALL_IN_ONE.safetensors"
     
     print(f"Akan menggabungkan {len(loras_to_merge)} LoRA ke model '{base_model}'...")
@@ -112,5 +95,5 @@ def main():
         base_model_path=base_model,
         output_model_path=output_model,
         lora_files=loras_to_merge,
-        lora_ratios=ratios_for_loras,
-    )
+        lora_ratios=loras_for_loras,
+        )
