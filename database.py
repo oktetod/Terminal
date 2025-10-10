@@ -6,7 +6,7 @@ from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
-DATABASE_URL = os.environ.get("postgres://mouse:sP7=hH8+rK3=gL4=pJ8_@/nursing-plum-pony")
+DATABASE_URL ="postgres://mouse:sP7=hH8+rK3=gL4=pJ8_@/nursing-plum-pony"
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable not set!")
 
