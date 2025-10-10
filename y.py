@@ -3,16 +3,18 @@ import subprocess
 from pathlib import Path
 
 # ==============================================================================
-# BAGIAN 1: PENGATURAN LINGKUNGAN (Tidak perlu diubah)
+# BAGIAN 1: PENGATURAN LINGKUNGAN (DENGAN PERBAIKAN)
 # ==============================================================================
 image = modal.Image.debian_slim(python_version="3.10").pip_install(
-    "torch", "torchvision", "torchaudio", "--extra-index-url", "https://download.pytorch.org/whl/cu118"
+    packages=["torch", "torchvision", "torchaudio"],  # <-- PERBAIKAN DI SINI
+    extra_options="--extra-index-url https://download.pytorch.org/whl/cu118"  # <-- PERBAIKAN DI SINI
 ).pip_install(
     "git+https://github.com/kohya-ss/sd-scripts.git"
 )
+
 base_model_storage = modal.Volume.from_name("civitai-model")
 loras_storage = modal.Volume.from_name("civitai-loras-collection-vol")
-app = modal.App("sdxl-lora-merge-all", image=image)
+app = modal.App("sdxl-lora-merge-all-fixed", image=image)
 BASE_MODEL_DIR = Path("/base_model")
 LORAS_DIR = Path("/loras")
 
@@ -63,19 +65,15 @@ def merge_loras_on_modal(base_model_path: str, output_model_path: str, lora_file
 def main():
     print("🚀 Memulai skrip 'Gabungkan Semua'...")
     
-    # 1. Mengambil semua nama file LoRA secara otomatis
     loras_to_merge = get_all_lora_filenames.remote()
 
     if not loras_to_merge:
         print("Tidak ada file LoRA yang ditemukan. Proses dihentikan.")
         return
 
-    # 2. Menetapkan bobot (ratio) yang sama untuk semua LoRA
-    # Nilai kecil untuk mencoba mengurangi "kerusakan" pada model
     uniform_ratio = 0.1
     ratios_for_loras = [uniform_ratio] * len(loras_to_merge)
     
-    # 3. Menjalankan proses merge
     base_model = "model.safetensors"
     output_model = "merged_models/juggernaut_ALL_IN_ONE.safetensors"
     
