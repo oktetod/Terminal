@@ -124,6 +124,9 @@ image = (
         "huggingface_hub==0.20.1",
         "opencv-python-headless==4.8.1.78",
         "controlnet_aux==0.0.7",
+        "pybind11>=2.12",
+        "omegaconf",
+        "NumPy==2.0.0",
         "slowapi==0.1.9",
     )
 )
@@ -519,7 +522,7 @@ def download_controlnet_models():
         Config.CONTROLNET_DIR: controlnet_volume,
         Config.JSON_DATA_DIR: json_volume
     },
-    container_idle_timeout=300,
+    scaledown_window=200,
     timeout=600
 )
 class ModelInference:
