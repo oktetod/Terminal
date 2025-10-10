@@ -40,7 +40,6 @@ LORA_MODELS = {
     "add_detail": {"url": "https://civitai.com/api/download/models/223332", "filename": "add_detail.safetensors"},
     "epi_noiseoffset": {"url": "https://civitai.com/api/download/models/10643", "filename": "epi_noiseoffset.safetensors"},
     "detail_tweaker_xl": {"url": "https://civitai.com/api/download/models/122359", "filename": "detail_tweaker_xl.safetensors"},
-    "jk_skirt": {"url": "https://civitai.com/api/download/models/120250", "filename": "jk_skirt.safetensors"},
     "mecha_angel": {"url": "https://civitai.com/api/download/models/116297", "filename": "mecha_angel.safetensors"},
     "makima_csm": {"url": "https://civitai.com/api/download/models/30141", "filename": "makima_csm.safetensors"},
     "russian_beauty": {"url": "https://civitai.com/api/download/models/1880455", "filename": "russian_beauty.safetensors"},
