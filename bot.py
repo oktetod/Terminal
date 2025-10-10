@@ -495,28 +495,37 @@ class SmartImageBot:
 # ===================================================================
 # MAIN ENTRY POINT
 # ===================================================================
+# Filename: bot.py
+# ... (keep all the code above as is) ...
+
+# ===================================================================
+# MAIN ENTRY POINT
+# ===================================================================
 async def main():
     """Main entry point"""
     logger.info("🚀 Starting Telethon bot...")
     
-    # Create Telethon client
+    # 1. Instantiate the client first
     client = TelegramClient(
         'bot_session',
         Config.API_ID,
         Config.API_HASH
-    ).start(bot_token=Config.BOT_TOKEN)
+    )
     
     # Create bot instance
     bot = SmartImageBot(client)
     
     try:
+        # 2. Start the client here using await
+        await client.start(bot_token=Config.BOT_TOKEN)
+        
         # Initialize bot
         await bot.start()
         
         logger.info("✅ Bot is running and ready to receive messages!")
         logger.info("Press Ctrl+C to stop the bot.")
         
-        # Run until disconnected
+        # This will now work correctly
         await client.run_until_disconnected()
         
     except (KeyboardInterrupt, SystemExit):
@@ -524,8 +533,10 @@ async def main():
     except Exception as e:
         logger.critical(f"💥 A critical error occurred: {e}", exc_info=True)
     finally:
+        # 3. Ensure the shutdown and disconnect calls are on the actual client
         await bot.shutdown()
-        await client.disconnect()
+        if client.is_connected():
+            await client.disconnect()
 
 if __name__ == "__main__":
     asyncio.run(main())
