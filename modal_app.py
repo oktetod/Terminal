@@ -257,7 +257,7 @@ def download_controlnet_models():
     image=image,
     gpu="L4",
     volumes={MODEL_DIR: model_volume, LORA_DIR: lora_volume, CONTROLNET_DIR: controlnet_volume},
-    container_idle_timeout=200
+    scaledown_window=200
 )
 class ModelInference:
     @modal.enter()
