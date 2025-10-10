@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path
 
 # ==============================================================================
-# BAGIAN 1: PENGATURAN LINGKUNGAN
+# BAGIAN 1: PENGATURAN LINGKungan
 # ==============================================================================
 image = modal.Image.debian_slim(python_version="3.10").apt_install(
     "git"
@@ -16,7 +16,7 @@ image = modal.Image.debian_slim(python_version="3.10").apt_install(
 
 base_model_storage = modal.Volume.from_name("civitai-models")
 loras_storage = modal.Volume.from_name("civitai-loras-collection-vol")
-app = modal.App("sdxl-lora-merge-debug", image=image) # Nama diubah untuk hindari cache
+app = modal.App("sdxl-lora-merge-debug-v2", image=image) # Nama diubah untuk hindari cache
 BASE_MODEL_DIR = Path("/base_model")
 LORAS_DIR = Path("/loras")
 
@@ -95,5 +95,6 @@ def main():
         base_model_path=base_model,
         output_model_path=output_model,
         lora_files=loras_to_merge,
-        lora_ratios=loras_for_loras,
-        )
+        # --- PERBAIKAN TYPO DI SINI ---
+        lora_ratios=ratios_for_loras,
+    )
