@@ -103,9 +103,11 @@ def download_json_files():
     
     github_urls = {
         "01.json": "https://raw.githubusercontent.com/oktetod/Terminal/main/01.json",
+        "02.json": "https://raw.githubusercontent.com/oktetod/Terminal/main/02.json",
         "03.json": "https://raw.githubusercontent.com/oktetod/Terminal/main/03.json",
         "04.json": "https://raw.githubusercontent.com/oktetod/Terminal/main/04.json",
         "05.json": "https://raw.githubusercontent.com/oktetod/Terminal/main/05.json",
+        "06.json": "https://raw.githubusercontent.com/oktetod/Terminal/main/06.json",
         "07.json": "https://raw.githubusercontent.com/oktetod/Terminal/main/07.json",
     }
     
@@ -284,7 +286,7 @@ def download_controlnet_models():
     image=image,
     gpu="L4",
     volumes={MODEL_DIR: model_volume, LORA_DIR: lora_volume, CONTROLNET_DIR: controlnet_volume, JSON_DATA_DIR: json_volume},
-    container_idle_timeout=200
+    scaledown_window=200
 )
 class ModelInference:
     @modal.enter()
