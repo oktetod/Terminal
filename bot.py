@@ -21,11 +21,11 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 class Config:
-    TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-    CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY")
-    MODAL_API_URL = os.environ.get("MODAL_API_URL")
-    MODAL_API_KEY = os.environ.get("MODAL_API_KEY")
-    ADMIN_USER_ID = int(os.environ.get("ADMIN_USER_ID", 0)) # ID Telegram Anda untuk akses perintah admin
+    TELEGRAM_TOKEN = os.environ.get("8222362928:AAG85K4WRPmf2yBPb_6j3uJiMHDYgscgolc")
+    CEREBRAS_API_KEY = os.environ.get("csk-j439vyke89px4we44r29wcvetwcfm6mjmp5xwmxx4m2mpmcn")
+    MODAL_API_URL = os.environ.get("https://oktetod--civitai-api-fastapi-fastapi-app.modal.run")
+    MODAL_API_KEY = os.environ.get("gilpad008")
+    ADMIN_USER_ID = int(os.environ.get("8484686373", 0)) # ID Telegram Anda untuk akses perintah admin
     REQUEST_TIMEOUT = 180
 
 # ===================================================================
