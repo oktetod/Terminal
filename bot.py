@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 
 class Config:
     # Get from https://my.telegram.org
-    API_ID = 28535133  # Replace with your API ID
-    API_HASH = "dede41f452ebdbb66ee56b50c95b53ba"  # Replace with your API Hash
+    API_ID = 10446785  # Replace with your API ID
+    API_HASH = "4261b62d60200eb99a38dcd8b71c8634"  # Replace with your API Hash
     BOT_TOKEN = "8222362928:AAG85K4WRPmf2yBPb_6j3uJiMHDYgscgolc"
     
     CEREBRAS_API_KEY = "csk-j439vyke89px4we44r29wcvetwcfm6mjmp5xwmxx4m2mpmcn"
