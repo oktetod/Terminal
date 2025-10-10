@@ -16,7 +16,7 @@ image = modal.Image.debian_slim(python_version="3.10").apt_install(
 
 base_model_storage = modal.Volume.from_name("civitai-models")
 loras_storage = modal.Volume.from_name("civitai-loras-collection-vol")
-app = modal.App("sdxl-lora-merge-final", image=image)
+app = modal.App("sdxl-lora-merge-final-v2", image=image)
 BASE_MODEL_DIR = Path("/base_model")
 LORAS_DIR = Path("/loras")
 
@@ -38,23 +38,33 @@ def get_all_lora_filenames():
 @app.function(
     volumes={BASE_MODEL_DIR: base_model_storage, LORAS_DIR: loras_storage},
     timeout=1200,
-    gpu="any" # Menambahkan GPU bisa mempercepat proses merge
+    gpu="any"
 )
 def merge_loras_on_modal(base_model_path: str, output_model_path: str, lora_files: list[str], lora_ratios: list[float]):
     """Fungsi ini menjalankan proses merge untuk semua LoRA yang ditemukan."""
+    import site
+    from pathlib import Path
+
     base_model_full_path = BASE_MODEL_DIR / base_model_path
     output_model_full_path = BASE_MODEL_DIR / output_model_path
     output_model_full_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # --- PERBAIKAN FINAL DI SINI ---
-    # Menggunakan skrip yang benar sesuai versi terbaru dari repository
+    # --- PERBAIKAN FINAL ---
+    # 1. Cari tahu di mana pip menginstal paketnya di dalam container
+    site_packages_path = site.getsitepackages()[0]
+    
+    # 2. Buat path lengkap ke skrip yang benar
+    script_full_path = Path(site_packages_path) / "networks" / "sdxl_merge_lora.py"
+    
+    # 3. Jalankan skrip menggunakan path lengkapnya
     cmd = [
-        "python", "-m", "networks.sdxl_merge_lora",
+        "python",
+        str(script_full_path), # <-- Gunakan path lengkap, bukan nama modul
         "--save_precision", "fp16",
         "--sd_model", str(base_model_full_path),
         "--save_to", str(output_model_full_path),
     ]
-    # -----------------------------
+    # -------------------------
 
     lora_full_paths = [str(LORAS_DIR / lora) for lora in lora_files]
     cmd.extend(["--models", *lora_full_paths])
@@ -62,7 +72,7 @@ def merge_loras_on_modal(base_model_path: str, output_model_path: str, lora_file
     cmd.extend(["--ratios", *ratio_strs])
 
     print(f"--- 🌀 Memulai proses merge untuk {len(lora_files)} LoRA... ---")
-    print(f"Running command: {' '.join(cmd)}") # Print perintah untuk debugging
+    print(f"Running command: {' '.join(cmd)}")
 
     result = subprocess.run(cmd, capture_output=True, text=True)
 
