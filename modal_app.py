@@ -60,7 +60,7 @@ CONTROLNET_MODELS = {
     "canny": "diffusers/controlnet-canny-sdxl-1.0",
     "depth": "diffusers/controlnet-depth-sdxl-1.0",
 }
-
+MODEL_DIR = "/models"
 # ===================================================================
 # DEFINISI IMAGE & VOLUME
 # ===================================================================
