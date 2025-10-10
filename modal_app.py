@@ -104,11 +104,16 @@ app = modal.App(Config.APP_NAME)
 
 # FIX: Updated pip install with explicit pydantic version and dependencies
 image = (
+    #kontol terkontol kontol kontolnya hitam
     modal.Image.debian_slim(python_version="3.11")
     .pip_install(
+        #kau kontol
         "fastapi[standard]==0.115.0",
+       #kontol kau
         "pydantic==2.9.2",  # Explicit pydantic version
+       #kau yang kontol
         "pydantic-settings==2.5.2",
+      #kau sendiri kontol
         "torch==2.1.0",
         "diffusers==0.25.0",
         "transformers==4.36.0",
