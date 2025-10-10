@@ -204,7 +204,7 @@ def calculate_aspect_ratio_dimensions(
 # PYDANTIC MODELS FOR VALIDATION (After utility functions)
 # ===================================================================
 # FIX: Import pydantic correctly with try-except for better error handling
-
+"""
 try:
     from pydantic import BaseModel, Field, field_validator, ConfigDict
 except ImportError as e:
@@ -298,7 +298,7 @@ class ControlNetRequest(BaseModel):
         except Exception:
             raise ValueError("Invalid base64 control image data")
         return v
-
+"""
 # ===================================================================
 # DOWNLOAD FUNCTIONS
 # ===================================================================
