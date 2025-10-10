@@ -36,7 +36,7 @@ DEFAULT_POSITIVE_PROMPT_SUFFIX = (
 # ===================================================================
 LORA_DIR = "/loras"
 LORA_MODELS = {
-    "// A. Essential Tools & Helpers (15 LoRAs)": {},
+  #  "// A. Essential Tools & Helpers (15 LoRAs)": {},
     "tool_sdxl_offset_noise": {"url": "https://civitai.com/api/download/models/135931", "filename": "tool_sdxl_offset_noise.safetensors"},
     "tool_add_detail_xl": {"url": "https://civitai.com/api/download/models/223332", "filename": "tool_add_detail_xl.safetensors"},
     "tool_perfect_hands_xl": {"url": "https://civitai.com/api/download/models/209359", "filename": "tool_perfect_hands_xl.safetensors"},
@@ -53,7 +53,7 @@ LORA_MODELS = {
     "tool_wet_surfaces_xl": {"url": "https://civitai.com/api/download/models/133185", "filename": "tool_wet_surfaces_xl.safetensors"},
     "tool_film_slide_border_xl": {"url": "https://civitai.com/api/download/models/128362", "filename": "tool_film_slide_border_xl.safetensors"},
 
-    "// B. Photographic & Cinematic Styles (18 LoRAs)": {},
+  #  "// B. Photographic & Cinematic Styles (18 LoRAs)": {},
     "style_cinematic_lighting_xl": {"url": "https://civitai.com/api/download/models/152433", "filename": "style_cinematic_lighting_xl.safetensors"},
     "style_film_grain_fuji_xl": {"url": "https://civitai.com/api/download/models/132841", "filename": "style_film_grain_fuji_xl.safetensors"},
     "style_film_grain_kodak_xl": {"url": "https://civitai.com/api/download/models/134937", "filename": "style_film_grain_kodak_xl.safetensors"},
@@ -73,7 +73,7 @@ LORA_MODELS = {
     "style_split_toning_xl": {"url": "https://civitai.com/api/download/models/144215", "filename": "style_split_toning_xl.safetensors"},
     "style_bleach_bypass_film_xl": {"url": "https://civitai.com/api/download/models/121549", "filename": "style_bleach_bypass_film_xl.safetensors"},
 
-    "// C. Artistic & Illustration Styles (17 LoRAs)": {},
+   # "// C. Artistic & Illustration Styles (17 LoRAs)": {},
     "style_oil_painting_xl": {"url": "https://civitai.com/api/download/models/126322", "filename": "style_oil_painting_xl.safetensors"},
     "style_watercolor_painting_xl": {"url": "https://civitai.com/api/download/models/130142", "filename": "style_watercolor_painting_xl.safetensors"},
     "style_ink_wash_painting_sumi-e_xl": {"url": "https://civitai.com/api/download/models/123274", "filename": "style_ink_wash_painting_sumi-e_xl.safetensors"},
@@ -92,7 +92,7 @@ LORA_MODELS = {
     "style_acrylic_painting_xl": {"url": "https://civitai.com/api/download/models/132810", "filename": "style_acrylic_painting_xl.safetensors"},
     "style_cyber_sigilism_xl": {"url": "https://civitai.com/api/download/models/123389", "filename": "style_cyber_sigilism_xl.safetensors"},
 
-    "// D. Anime & Manga Styles (12 LoRAs)": {},
+  #  "// D. Anime & Manga Styles (12 LoRAs)": {},
     "style_anime_ghibli_xl": {"url": "https://civitai.com/api/download/models/152640", "filename": "style_anime_ghibli_xl.safetensors"},
     "style_anime_makoto_shinkai_xl": {"url": "https://civitai.com/api/download/models/121833", "filename": "style_anime_makoto_shinkai_xl.safetensors"},
     "style_anime_retro_80s_xl": {"url": "https://civitai.com/api/download/models/125184", "filename": "style_anime_retro_80s_xl.safetensors"},
@@ -106,7 +106,7 @@ LORA_MODELS = {
     "style_kpop_photoshoot_xl": {"url": "https://civitai.com/api/download/models/165561", "filename": "style_kpop_photoshoot_xl.safetensors"},
     "style_90s_kpop_look_xl": {"url": "https://civitai.com/api/download/models/171565", "filename": "style_90s_kpop_look_xl.safetensors"},
     
-    "// E. Characters (Games, Anime, Other) (31 LoRAs)": {},
+   # "// E. Characters (Games, Anime, Other) (31 LoRAs)": {},
     "char_tifa_lockhart_ff7_xl": {"url": "https://civitai.com/api/download/models/120391", "filename": "char_tifa_lockhart_ff7_xl.safetensors"},
     "char_2b_nier_automata_xl": {"url": "https://civitai.com/api/download/models/120485", "filename": "char_2b_nier_automata_xl.safetensors"},
     "char_raiden_shogun_genshin_xl": {"url": "https://civitai.com/api/download/models/123490", "filename": "char_raiden_shogun_genshin_xl.safetensors"},
@@ -139,7 +139,7 @@ LORA_MODELS = {
     "char_face_vampire_xl": {"url": "https://civitai.com/api/download/models/121650", "filename": "char_face_vampire_xl.safetensors"},
     "char_face_general_k-idol_xl": {"url": "https://civitai.com/api/download/models/144383", "filename": "char_face_general_k-idol_xl.safetensors"},
 
-    "// F. Clothing & Fashion (17 LoRAs)": {},
+  #  "// F. Clothing & Fashion (17 LoRAs)": {},
     "fashion_gothic_lolita_xl": {"url": "https://civitai.com/api/download/models/121774", "filename": "fashion_gothic_lolita_xl.safetensors"},
     "fashion_techwear_cyberpunk_xl": {"url": "https://civitai.com/api/download/models/120993", "filename": "fashion_techwear_cyberpunk_xl.safetensors"},
     "fashion_traditional_kimono_xl": {"url": "https://civitai.com/api/download/models/124706", "filename": "fashion_traditional_kimono_xl.safetensors"},
@@ -158,7 +158,7 @@ LORA_MODELS = {
     "fashion_kpop_idol_stage_outfit_xl": {"url": "https://civitai.com/api/download/models/121287", "filename": "fashion_kpop_idol_stage_outfit_xl.safetensors"},
     "fashion_school_uniform_xl": {"url": "https://civitai.com/api/download/models/121223", "filename": "fashion_school_uniform_xl.safetensors"},
 
-    "// G. Concepts, Objects, & Poses (15 LoRAs)": {},
+   # "// G. Concepts, Objects, & Poses (15 LoRAs)": {},
     "concept_curvy_chubby_girl_xl": {"url": "https://civitai.com/api/download/models/131765", "filename": "concept_curvy_chubby_girl_xl.safetensors"},
     "concept_muscular_body_xl": {"url": "https://civitai.com/api/download/models/128873", "filename": "concept_muscular_body_xl.safetensors"},
     "concept_mecha_girl_fusion_xl": {"url": "https://civitai.com/api/download/models/158762", "filename": "concept_mecha_girl_fusion_xl.safetensors"},
@@ -175,7 +175,7 @@ LORA_MODELS = {
     "concept_robotic_arms_xl": {"url": "https://civitai.com/api/download/models/120863", "filename": "concept_robotic_arms_xl.safetensors"},
     "concept_detailed_tattoos_xl": {"url": "https://civitai.com/api/download/models/125359", "filename": "concept_detailed_tattoos_xl.safetensors"},
 
-    "// H. Environments & Architecture (15 LoRAs)": {},
+  #  "// H. Environments & Architecture (15 LoRAs)": {},
     "env_sci-fi_cityscape_xl": {"url": "https://civitai.com/api/download/models/121822", "filename": "env_sci-fi_cityscape_xl.safetensors"},
     "env_fantasy_landscape_xl": {"url": "https://civitai.com/api/download/models/120999", "filename": "env_fantasy_landscape_xl.safetensors"},
     "env_detailed_interiors_xl": {"url": "https://civitai.com/api/download/models/132717", "filename": "env_detailed_interiors_xl.safetensors"},
@@ -192,14 +192,14 @@ LORA_MODELS = {
     "env_gothic_cathedral_xl": {"url": "https://civitai.com/api/download/models/121350", "filename": "env_gothic_cathedral_xl.safetensors"},
     "env_classroom_anime_xl": {"url": "https://civitai.com/api/download/models/121873", "filename": "env_classroom_anime_xl.safetensors"},
 
-    "// I. Vehicles & Machinery (5 LoRAs)": {},
+   # "// I. Vehicles & Machinery (5 LoRAs)": {},
     "vehicle_cyberpunk_car_xl": {"url": "https://civitai.com/api/download/models/121171", "filename": "vehicle_cyberpunk_car_xl.safetensors"},
     "vehicle_classic_motorcycle_xl": {"url": "https://civitai.com/api/download/models/151475", "filename": "vehicle_classic_motorcycle_xl.safetensors"},
     "vehicle_spaceship_cockpit_xl": {"url": "https://civitai.com/api/download/models/121518", "filename": "vehicle_spaceship_cockpit_xl.safetensors"},
     "vehicle_steampunk_airship_xl": {"url": "https://civitai.com/api/download/models/121565", "filename": "vehicle_steampunk_airship_xl.safetensors"},
     "vehicle_f1_race_car_xl": {"url": "https://civitai.com/api/download/models/147545", "filename": "vehicle_f1_race_car_xl.safetensors"},
 
-    "// K. K-Pop Idols (57 LoRAs)": {},
+   # "// K. K-Pop Idols (57 LoRAs)": {},
     "kpop_blackpink_jennie_xl": {"url": "https://civitai.com/api/download/models/153188", "filename": "kpop_blackpink_jennie_xl.safetensors"},
     "kpop_blackpink_jisoo_xl": {"url": "https://civitai.com/api/download/models/121305", "filename": "kpop_blackpink_jisoo_xl.safetensors"},
     "kpop_blackpink_rose_xl": {"url": "https://civitai.com/api/download/models/122442", "filename": "kpop_blackpink_rose_xl.safetensors"},
