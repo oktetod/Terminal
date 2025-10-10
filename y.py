@@ -3,18 +3,18 @@ import subprocess
 from pathlib import Path
 
 # ==============================================================================
-# BAGIAN 1: PENGATURAN LINGKUNGAN (DENGAN PERBAIKAN)
+# BAGIAN 1: PENGATURAN LINGKUNGAN (DENGAN PERBAIKAN FINAL)
 # ==============================================================================
 image = modal.Image.debian_slim(python_version="3.10").pip_install(
-    packages=["torch", "torchvision", "torchaudio"],  # <-- PERBAIKAN DI SINI
-    extra_options="--extra-index-url https://download.pytorch.org/whl/cu118"  # <-- PERBAIKAN DI SINI
+    "torch", "torchvision", "torchaudio",  # <-- PERBAIKAN FINAL
+    extra_options="--extra-index-url https://download.pytorch.org/whl/cu118"  # <-- PERBAIKAN FINAL
 ).pip_install(
     "git+https://github.com/kohya-ss/sd-scripts.git"
 )
 
 base_model_storage = modal.Volume.from_name("civitai-model")
 loras_storage = modal.Volume.from_name("civitai-loras-collection-vol")
-app = modal.App("sdxl-lora-merge-all-fixed", image=image)
+app = modal.App("sdxl-lora-merge-all-final-fix", image=image)
 BASE_MODEL_DIR = Path("/base_model")
 LORAS_DIR = Path("/loras")
 
@@ -35,7 +35,7 @@ def get_all_lora_filenames():
 
 @app.function(
     volumes={BASE_MODEL_DIR: base_model_storage, LORAS_DIR: loras_storage},
-    timeout=1200, # Waktu ditambah karena prosesnya berat
+    timeout=1200,
 )
 def merge_loras_on_modal(base_model_path: str, output_model_path: str, lora_files: list[str], lora_ratios: list[float]):
     """Fungsi ini menjalankan proses merge untuk semua LoRA yang ditemukan."""
