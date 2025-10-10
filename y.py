@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path
 
 # ==============================================================================
-# BAGIAN 1: PENGATURAN LINGKungan
+# BAGIAN 1: PENGATURAN LINGKUNGAN
 # ==============================================================================
 image = modal.Image.debian_slim(python_version="3.10").apt_install(
     "git"
@@ -16,7 +16,7 @@ image = modal.Image.debian_slim(python_version="3.10").apt_install(
 
 base_model_storage = modal.Volume.from_name("civitai-models")
 loras_storage = modal.Volume.from_name("civitai-loras-collection-vol")
-app = modal.App("sdxl-lora-merge-debug-v2", image=image) # Nama diubah untuk hindari cache
+app = modal.App("sdxl-lora-merge-debug-v3", image=image)
 BASE_MODEL_DIR = Path("/base_model")
 LORAS_DIR = Path("/loras")
 
@@ -42,23 +42,22 @@ def get_all_lora_filenames():
 )
 def merge_loras_on_modal(base_model_path: str, output_model_path: str, lora_files: list[str], lora_ratios: list[float]):
     """
-    FUNGSI DEBUG: Fungsi ini hanya untuk menemukan path file yang benar.
+    FUNGSI DEBUG FINAL: Mencari file 'merge_lora.py'
     """
     import subprocess
-    print("--- 🕵️  Memulai mode debug: Mencari file 'sdxl_merge_lora.py'... ---")
+    print("--- 🕵️  Memulai mode debug: Mencari file 'merge_lora.py'... ---")
     
-    # Perintah untuk mencari file di seluruh sistem di dalam container
-    cmd = ["find", "/", "-name", "sdxl_merge_lora.py", "-type", "f"]
+    # PERUBAHAN DI SINI: Kita mencari file yang lebih umum
+    cmd = ["find", "/", "-name", "merge_lora.py", "-type", "f"]
     
     result = subprocess.run(cmd, capture_output=True, text=True)
     
     print("--- 📜 Hasil Pencarian ---")
     if result.stdout:
         print("✅ File ditemukan di path berikut:")
-        # Output ini adalah yang kita butuhkan!
         print(result.stdout)
     else:
-        print("❌ File 'sdxl_merge_lora.py' tidak ditemukan di mana pun.")
+        print("❌ File 'merge_lora.py' tidak ditemukan di mana pun.")
     
     if result.stderr:
         print("--- ⚠️ Pesan Error dari Perintah 'find' ---")
@@ -67,7 +66,6 @@ def merge_loras_on_modal(base_model_path: str, output_model_path: str, lora_file
     print("--- 🛑 Selesai debug. Proses dihentikan dengan sengaja. ---")
     print("--- 👉 Salin path yang muncul di atas (jika ada) dan berikan ke saya. ---")
     
-    # Menghentikan proses dengan sengaja setelah debug selesai
     raise RuntimeError("DEBUG SELESAI: Ini bukan error, hanya cara untuk menghentikan eksekusi.")
 
 # ==============================================================================
@@ -95,6 +93,5 @@ def main():
         base_model_path=base_model,
         output_model_path=output_model,
         lora_files=loras_to_merge,
-        # --- PERBAIKAN TYPO DI SINI ---
         lora_ratios=ratios_for_loras,
     )
