@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path
 
 # ==============================================================================
-# BAGIAN 1: PENGATURAN LINGKUNGAN (DENGAN PERBAIKAN GIT)
+# BAGIAN 1: PENGATURAN LINGKUNGAN
 # ==============================================================================
 image = modal.Image.debian_slim(python_version="3.10").apt_install(
     "git"
@@ -16,7 +16,7 @@ image = modal.Image.debian_slim(python_version="3.10").apt_install(
 
 base_model_storage = modal.Volume.from_name("civitai-models")
 loras_storage = modal.Volume.from_name("civitai-loras-collection-vol")
-app = modal.App("sdxl-lora-merge-all-final-fix-v2", image=image)
+app = modal.App("sdxl-lora-merge-final", image=image)
 BASE_MODEL_DIR = Path("/base_model")
 LORAS_DIR = Path("/loras")
 
@@ -38,35 +38,46 @@ def get_all_lora_filenames():
 @app.function(
     volumes={BASE_MODEL_DIR: base_model_storage, LORAS_DIR: loras_storage},
     timeout=1200,
+    gpu="any" # Menambahkan GPU bisa mempercepat proses merge
 )
 def merge_loras_on_modal(base_model_path: str, output_model_path: str, lora_files: list[str], lora_ratios: list[float]):
     """Fungsi ini menjalankan proses merge untuk semua LoRA yang ditemukan."""
     base_model_full_path = BASE_MODEL_DIR / base_model_path
     output_model_full_path = BASE_MODEL_DIR / output_model_path
     output_model_full_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    # --- PERBAIKAN DI SINI ---
+
+    # --- PERBAIKAN FINAL DI SINI ---
+    # Menggunakan skrip yang benar sesuai versi terbaru dari repository
     cmd = [
-        "python", "-m", "sdxl_train.sdxl_merge_lora", # Panggil sebagai module Python
+        "python", "-m", "networks.sdxl_merge_lora",
         "--save_precision", "fp16",
-        "--sd_model", str(base_model_full_path), "--save_to", str(output_model_full_path),
+        "--sd_model", str(base_model_full_path),
+        "--save_to", str(output_model_full_path),
     ]
-    # -------------------------
+    # -----------------------------
 
     lora_full_paths = [str(LORAS_DIR / lora) for lora in lora_files]
     cmd.extend(["--models", *lora_full_paths])
     ratio_strs = [str(r) for r in lora_ratios]
     cmd.extend(["--ratios", *ratio_strs])
+
     print(f"--- 🌀 Memulai proses merge untuk {len(lora_files)} LoRA... ---")
-    
+    print(f"Running command: {' '.join(cmd)}") # Print perintah untuk debugging
+
     result = subprocess.run(cmd, capture_output=True, text=True)
+
     if result.returncode != 0:
-        print("--- ❌ Proses merge gagal! ---"); print("STDERR:", result.stderr); raise RuntimeError("Proses merge gagal.")
+        print("--- ❌ Proses merge gagal! ---")
+        print("STDOUT:", result.stdout)
+        print("STDERR:", result.stderr)
+        raise RuntimeError("Proses merge gagal.")
     else:
-        print(f"--- ✅ Proses merge selesai! Model 'super-merge' disimpan di Volume 'civitai-model' pada path: {output_model_path}")
+        print("--- ✅ Proses merge selesai! ---")
+        print("STDOUT:", result.stdout)
+        print(f"Model 'super-merge' disimpan di Volume 'civitai-models' pada path: {output_model_path}")
 
 # ==============================================================================
-# BAGIAN 3: FUNGSI UTAMA (Tidak perlu diubah)
+# BAGIAN 3: FUNGSI UTAMA
 # ==============================================================================
 @app.local_entrypoint()
 def main():
@@ -78,11 +89,14 @@ def main():
         print("Tidak ada file LoRA yang ditemukan. Proses dihentikan.")
         return
 
+    # Anda bisa mengatur rasio di sini sesuai kebutuhan
     uniform_ratio = 0.1
     ratios_for_loras = [uniform_ratio] * len(loras_to_merge)
     
-    base_model = "model.safetensors"
+    base_model = "model.safetensors" # Pastikan nama base model Anda benar
     output_model = "merged_models/juggernaut_ALL_IN_ONE.safetensors"
+    
+    print(f"Akan menggabungkan {len(loras_to_merge)} LoRA ke model '{base_model}'...")
     
     merge_loras_on_modal.remote(
         base_model_path=base_model,
