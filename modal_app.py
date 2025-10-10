@@ -405,7 +405,7 @@ def download_loras():
     
     total_loras = len(lora_models)
     current_index = 0
-    max_retries = 3
+    max_retries = 1
     
     for name, data in lora_models.items():
         current_index += 1
