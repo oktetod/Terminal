@@ -201,14 +201,14 @@ def calculate_aspect_ratio_dimensions(
 # PYDANTIC MODELS FOR VALIDATION (After utility functions)
 # ===================================================================
 # FIX: Import pydantic correctly with try-except for better error handling
-try:
-    from pydantic import BaseModel, Field, field_validator, ConfigDict
-except ImportError as e:
-    logger.error(f"Failed to import pydantic: {e}")
-    raise ImportError(
-        "Pydantic is required but not installed. "
-        "Please ensure the Modal image includes pydantic>=2.0"
-    ) from e
+#try:
+  #  from pydantic import BaseModel, Field, field_validator, ConfigDict
+#except ImportError as e:
+  #  logger.error(f"Failed to import pydantic: {e}")
+  #  raise ImportError(
+ #       "Pydantic is required but not installed. "
+ #       "Please ensure the Modal image includes pydantic>=2.0"
+  #  ) from e
 
 class Text2ImageRequest(BaseModel):
     """Validation model for text-to-image requests"""
