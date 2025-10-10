@@ -201,7 +201,8 @@ def calculate_aspect_ratio_dimensions(
 # PYDANTIC MODELS FOR VALIDATION (After utility functions)
 # ===================================================================
 # FIX: Import pydantic correctly with try-except for better error handling
-"""try:
+"""
+try:
     from pydantic import BaseModel, Field, field_validator, ConfigDict
 except ImportError as e:
     logger.error(f"Failed to import pydantic: {e}")
@@ -211,7 +212,7 @@ except ImportError as e:
     ) from e
 
 class Text2ImageRequest(BaseModel):
-    """Validation model for text-to-image requests"""
+    
     model_config = ConfigDict(extra='forbid')
     
     api_key: str = Field(..., min_length=1, description="API authentication key")
@@ -229,13 +230,12 @@ class Text2ImageRequest(BaseModel):
     @field_validator('width', 'height')
     @classmethod
     def validate_dimensions(cls, v: int) -> int:
-        """Ensure dimensions are multiples of 8"""
+        
         if v % 8 != 0:
             raise ValueError(f"Dimension must be multiple of 8, got {v}")
         return v
 
 class Image2ImageRequest(BaseModel):
-    """Validation model for image-to-image requests"""
     model_config = ConfigDict(extra='forbid')
     
     api_key: str = Field(..., min_length=1)
@@ -252,7 +252,7 @@ class Image2ImageRequest(BaseModel):
     seed: int = Field(default=-1, ge=-1)
     enhance_prompt: bool = Field(default=True)
     preserve_aspect_ratio: bool = Field(default=False)
-    """
+    
     @field_validator('width', 'height')
     @classmethod
     def validate_dimensions(cls, v: int) -> int:
@@ -263,7 +263,7 @@ class Image2ImageRequest(BaseModel):
     @field_validator('init_image')
     @classmethod
     def validate_base64(cls, v: str) -> str:
-        """Basic base64 validation"""
+        
         try:
             base64.b64decode(v)
         except Exception:
@@ -271,7 +271,7 @@ class Image2ImageRequest(BaseModel):
         return v
 
 class ControlNetRequest(BaseModel):
-    """Validation model for ControlNet requests"""
+    
     model_config = ConfigDict(extra='forbid')
     
     api_key: str = Field(..., min_length=1)
@@ -295,7 +295,7 @@ class ControlNetRequest(BaseModel):
         except Exception:
             raise ValueError("Invalid base64 control image data")
         return v
-
+"""
 # ===================================================================
 # DOWNLOAD FUNCTIONS
 # ===================================================================
