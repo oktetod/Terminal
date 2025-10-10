@@ -1,7 +1,7 @@
 # Filename: modal_app.py
 """
 Deploy Model CivitAI ke Modal.com dengan FastAPI
-Fitur Ultimate: Text-to-Image, Multi-LoRA, dan Multi-Model ControlNet (SDXL)
+Versi Final: GPU L4, Filter NSFW, LoRA, ControlNet
 """
 
 import modal
@@ -13,7 +13,7 @@ import base64
 # KONFIGURASI APLIKASI
 # ===================================================================
 
-app = modal.App("civitai-api-ultimate-final")
+app = modal.App("civitai-api-ultimate-l4")
 
 # Konfigurasi Model Utama (Juggernaut XL v9)
 MODEL_DIR = "/models"
@@ -25,7 +25,7 @@ LORA_DIR = "/loras"
 LORA_MODELS = {
     "add_detail": {"url": "https://civitai.com/api/download/models/223332", "filename": "add_detail.safetensors"},
     "epi_noiseoffset": {"url": "https://civitai.com/api/download/models/10643", "filename": "epi_noiseoffset.safetensors"},
-    "lora_slider": {"url": "https://civitai.com/api/download/models/309826", "filename": "lora_slider.safetensors"},
+    "detail_tweaker_xl": {"url": "https://civitai.com/api/download/models/122359", "filename": "detail_tweaker_xl.safetensors"},
     "jk_skirt": {"url": "https://civitai.com/api/download/models/120250", "filename": "jk_skirt.safetensors"},
     "mecha_angel": {"url": "https://civitai.com/api/download/models/116297", "filename": "mecha_angel.safetensors"},
     "makima_csm": {"url": "https://civitai.com/api/download/models/30141", "filename": "makima_csm.safetensors"},
@@ -49,7 +49,7 @@ CONTROLNET_MODELS = {
     "depth": "diffusers/controlnet-depth-sdxl-1.0",
 }
 
-# === NEGATIVE PROMPT DIKEMBALIKAN KE VERSI ORIGINAL ANDA ===
+# === PERUBAHAN: NEGATIVE PROMPT DENGAN FILTER NSFW ===
 DEFAULT_NEGATIVE_PROMPT = (
     "nsfw, nude, naked, porn, sex, sexual, explicit, uncensored, "
     "ass, breasts, nipple, pussy, genitalia, "
@@ -72,8 +72,9 @@ DEFAULT_POSITIVE_PROMPT_SUFFIX = "masterpiece, best quality, 8k, photorealistic,
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install(
-        "fastapi[standard]", "torch", "diffusers", "transformers",
-        "accelerate", "safetensors", "Pillow", "requests", "huggingface_hub"
+        "fastapi==0.110.0", "uvicorn", "pydantic", "starlette",
+        "torch==2.1.2", "diffusers==0.24.0", "transformers==4.35.2",
+        "accelerate", "safetensors", "Pillow", "requests", "huggingface_hub", "opencv-python-headless"
     )
 )
 
@@ -130,11 +131,10 @@ def download_controlnet_models():
 # ===================================================================
 
 @app.cls(
-    image=image,
+    # === PERUBAHAN: MENGGUNAKAN GPU L4 ===
     gpu="L4",
     volumes={MODEL_DIR: model_volume, LORA_DIR: lora_volume, CONTROLNET_DIR: controlnet_volume},
-    container_idle_timeout=300,
-    keep_warm=1
+    scale_down_idle_timeout=300, 
 )
 class ModelInference:
     @modal.enter()
@@ -229,7 +229,7 @@ class ModelInference:
 
 @app.function(
     secrets=[modal.Secret.from_name("custom-secret")],
-    keep_warm=1
+    min_containers=1,
 )
 @modal.asgi_app()
 def fastapi_app():
