@@ -134,7 +134,7 @@ def download_controlnet_models():
     # === PERUBAHAN: MENGGUNAKAN GPU L4 ===
     gpu="L4",
     volumes={MODEL_DIR: model_volume, LORA_DIR: lora_volume, CONTROLNET_DIR: controlnet_volume},
-    scale_down_idle_timeout=300, 
+    container_idle_timeout=300, 
 )
 class ModelInference:
     @modal.enter()
