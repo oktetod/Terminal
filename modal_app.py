@@ -750,8 +750,11 @@ def fastapi_app():
         try:
             data = await verify_api_key(request)
             
+            # Create ModelInference instance (spawns GPU container)
             model = ModelInference()
-            result = model.text_to_image.remote(data)
+            
+            # Call the remote method properly with await
+            result = await model.text_to_image.remote.aio(data)
             
             return JSONResponse(content=result)
             
@@ -759,8 +762,8 @@ def fastapi_app():
             raise
         except Exception as e:
             logger.error(f"✗ Text2img endpoint error: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-    
+            raise HTTPException(status_code=500, detail=str(e))    
+  
     @web_app.post("/img2img")
     @limiter.limit(f"{Config.RATE_LIMIT_PER_MINUTE}/minute")
     async def image_to_image_endpoint(request: Request):
