@@ -36,11 +36,11 @@ class Config:
     GPU_TYPE = "L4"
     
     # Directories
-    MODEL_DIR = "/merged_models"
+    MODEL_DIR = "/models"
     CONTROLNET_DIR = "/controlnet_models"
     
     # Model Path
-    MODEL_PATH = f"{MODEL_DIR}/juggernaut_ALL_IN_ONE.safetensors"
+    MODEL_PATH = f"{MODEL_DIR}/merged_models/juggernaut_ALL_IN_ONE.safetensors"
     
     # Limits
     MAX_WIDTH = 2048
