@@ -1,0 +1,94 @@
+{
+  "kpop_lora_sdxl_1.0": [
+    {
+      "artist": "IU",
+      "model_name": "IU (Lee Jieun) LoRA for SDXL 1.0",
+      "platform": "Civitai",
+      "url": "https://civitai.com/models/125431/iu-sdxl"
+    },
+    {
+      "artist": "BLACKPINK - Jennie",
+      "model_name": "Jennie Kim - BLACKPINK LoRA SDXL",
+      "platform": "Civitai",
+      "url": "https://civitai.com/models/123919/jennie-kim-blackpink-lora-sdxl"
+    },
+    {
+      "artist": "BLACKPINK - Lisa",
+      "model_name": "Lalisa Manoban (LISA BLACKPINK) LoRA for SDXL",
+      "platform": "Civitai",
+      "url": "https://civitai.com/models/123183/lalisa-manoban-lisa-blackpink-lora-for-sdxl"
+    },
+    {
+      "artist": "BLACKPINK - Jisoo",
+      "model_name": "Jisoo Kim - BLACKPINK SDXL LoRA",
+      "platform": "Civitai",
+      "url": "https://civitai.com/models/125218/jisoo-kim-blackpink-sdxl-lora"
+    },
+    {
+      "artist": "BLACKPINK - Rosé",
+      "model_name": "Roseanne Park - Rosé SDXL",
+      "platform": "Civitai",
+      "url": "https://civitai.com/models/126689/roseanne-park-rose-sdxl"
+    },
+    {
+      "artist": "Red Velvet - Irene",
+      "model_name": "Bae Joohyun (Irene) Red Velvet SDXL",
+      "platform": "Civitai",
+      "url": "https://civitai.com/models/129774/bae-joohyun-irene-red-velvet-sdxl"
+    },
+    {
+      "artist": "TWICE - Sana",
+      "model_name": "Sana from TWICE LoRA SDXL",
+      "platform": "Civitai",
+      "url": "https://civitai.com/models/131586/sana-from-twice-lora-sdxl"
+    },
+    {
+      "artist": "LE SSERAFIM - Kazuha",
+      "model_name": "Kazuha | LE SSERAFIM | SDXL",
+      "platform": "Civitai",
+      "url": "https://civitai.com/models/127395/kazuha-or-le-sserafim-or-sdxl"
+    },
+    {
+      "artist": "aespa - Karina",
+      "model_name": "Karina (aespa) SDXL",
+      "platform": "Civitai",
+      "url": "https://civitai.com/models/125547/karina-aespa-sdxl"
+    },
+    {
+      "artist": "IVE - Wonyoung",
+      "model_name": "Jang Wonyoung (IVE) SDXL LoRA",
+      "platform": "Civitai",
+      "url": "https://civitai.com/models/129184/jang-wonyoung-ive-sdxl-lora"
+    },
+    {
+      "artist": "NewJeans - Haerin",
+      "model_name": "Haerin (NewJeans) SDXL",
+      "platform": "Civitai",
+      "url": "https://civitai.com/models/126048/haerin-newjeans-sdxl"
+    },
+    {
+      "artist": "BTS - Jungkook",
+      "model_name": "Jungkook BTS SDXL",
+      "platform": "Civitai",
+      "url": "https://civitai.com/models/124999/jungkook-bts-sdxl"
+    },
+    {
+      "artist": "Stray Kids - Hyunjin",
+      "model_name": "Hyunjin (Stray Kids) LoRA for SDXL",
+      "platform": "Civitai",
+      "url": "https://civitai.com/models/130123/hyunjin-stray-kids-lora-for-sdxl"
+    },
+    {
+      "artist": "K-pop Style",
+      "model_name": "Korean Doll Likeness XL",
+      "platform": "Tensor.Art",
+      "url": "https://tensor.art/models/626245849830509433/koreandolllikenessxl"
+    },
+    {
+      "artist": "Korean Style",
+      "model_name": "Korean Likeness XL",
+      "platform": "Tensor.Art",
+      "url": "https://tensor.art/models/622543881338681534/Korean-Likeness-XL"
+    }
+  ]
+}
