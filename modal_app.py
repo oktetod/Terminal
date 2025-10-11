@@ -36,7 +36,7 @@ class Config:
     GPU_TYPE = "L4"
     
     # Directories
-    MODEL_DIR = "/civitai-models/merged_models"
+    MODEL_DIR = "/models/merged_models"
     CONTROLNET_DIR = "/controlnet_models"
     
     # Model Path
@@ -103,6 +103,7 @@ image = (
         "fastapi[standard]==0.104.1",
         "slowapi==0.1.9",
         # ML/AI dependencies
+        "numpy<2.0.0",
         "torch==2.1.0",
         "diffusers==0.25.0",
         "transformers==4.36.0",
