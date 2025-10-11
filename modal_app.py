@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 # ===================================================================
 class Config:
     """Centralized configuration management"""
-    APP_NAME = "juggernaut-api-fastapi"
+    APP_NAME = "civitai-api-fastapi"
     VERSION = "5.1.0"  # Fixed import order
     GPU_TYPE = "L4"
     
