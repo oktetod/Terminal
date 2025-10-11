@@ -151,7 +151,7 @@ def main():
     
     # Config
     base_model = "model.safetensors"
-    output_model = "merged_models/juggernaut_ALL_IN_ONE.safetensors"
+    output_model = "merged_models/kpop.safetensors"
     
     print(f"🎨 Base model: {base_model}")
     print(f"💾 Output akan disimpan ke: {output_model}")
