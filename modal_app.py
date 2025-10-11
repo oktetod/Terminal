@@ -36,7 +36,7 @@ class Config:
     GPU_TYPE = "L4"
     
     # Directories
-    MODEL_DIR = "/base_model/merged_models"
+    MODEL_DIR = "/merged_models"
     CONTROLNET_DIR = "/controlnet_models"
     
     # Model Path
